@@ -14,16 +14,17 @@ Resource::Silo::Container - base resource storage class for L<Resource::Silo>.
 =cut
 
 use Carp;
+our @CARP_NOT = qw(Resource::Silo Resource::Silo::Spec);
 
 =head2 new
 
 =cut
 
 sub new {
-    my ($class, $spec) = @_;
+    my ($class) = @_;
     my $self = {
         pid  => $$,
-        spec => $spec,
+        spec => $class->metadata,
     };
     return bless $self, $class;
 };
@@ -40,13 +41,22 @@ sub fetch {
     my ($self, $name, $arg) = @_;
     # TODO arg unused
 
+    croak "Arguments in resources unimplemented"
+        if defined $arg;
+
     if ($self->{pid} != $$) {
         delete $self->{rw_cache};
         $self->{pid} = $$;
     };
 
-    return $self->{rw_cache}{$name} //= do {
-        $self->{spec}->init($name)->($self, $name);
+    my $key = $name . (defined $arg ? ":$arg" : '');
+
+    return $self->{rw_cache}{$key} //= do {
+        croak "Circular dependency detected for resource $name"
+            if $self->{pending}{$key};
+        local $self->{pending}{$key} = 1;
+
+        $self->{spec}->init($name)->($self, $name, $arg);
     };
 };
 

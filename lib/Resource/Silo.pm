@@ -95,7 +95,7 @@ sub import {
 
     my $instance;
     my $silo = sub () { ## no critic 'prototypes'
-        return $instance //= $target->new($spec);
+        return $instance //= $target->new();
     };
 
     no strict 'refs'; ## no critic
