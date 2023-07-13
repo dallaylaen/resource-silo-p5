@@ -72,7 +72,86 @@ through this module and only through it.
 
 =head1 EXPORT
 
-=head2 resource 'name' => sub { ... };
+Upon using Resource::Silo in your module, a number of things happen:
+
+=over
+
+=item * L<Resource::Silo::Container> and L<Exporter> are added to C<@ISA>;
+
+=item * a C<silo> function returning the "default" calling package instance
+(obtained via new()) is created and added to C<@EXPORT>;
+
+=item * a C<metadata> function/method returning
+a static L<Resource::Silo::Spec> object is created;
+
+=item * a C<resource> function is created that can be used to define resources.
+
+=back
+
+=head2 silo
+
+silo() always returns the same object, creating it if necessary.
+
+This is how other modules in the project are supposed to access the resources:
+
+    # in My::Project::Some::Module
+    use My::Project::Resources;
+    silo->dbh; # returns a database handler defined in My::Project::Resources
+
+=head2 metadata
+
+Returns a static L<Resource::Silo::Spec> object associated with this package.
+
+=head2 resource
+
+    resource 'name' => sub { ... };
+    resource 'name' => %options;
+
+Define a resource.
+
+%options may include:
+
+=over
+
+=item * init => sub { $self, $name, [$argument] }
+
+A coderef to obtain the resource. Required.
+
+If the number of arguments is odd,
+the last one is shifted and considered to be the init function.
+
+=item * argument => C<sub { ... }> || C<qr( ... )>
+
+A sanity check on a string argument for the resource fetching function.
+
+If specified, the argument must always be supplied, the regular expression
+must match I<the whole> string, and the function return a true value.
+Otherwise an exception will be raised.
+
+Example:
+
+    use Resource::Silo;
+    use Redis;
+    use Redis::Namespace;
+
+    resource real_redis => sub { Redis->new };
+
+    my %known_namespaces = (
+        users    => 1,
+        sessions => 1,
+        counters => 1,
+    );
+
+    resource redis => argument => sub { $known_namespaces{ +shift } },
+        init => sub {
+            my ($self, $name, $ns) = @_;
+            Redis::Namespace->new(
+                redis     => $self->real_redis,
+                namespace => $ns,
+            );
+        };
+
+=back
 
 =cut
 
