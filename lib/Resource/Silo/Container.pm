@@ -41,7 +41,7 @@ sub fetch {
     my ($self, $name, $arg) = @_;
     # TODO arg unused
 
-    croak "Arguments in resources unimplemented"
+    croak "Arguments for resources unimplemented"
         if defined $arg;
 
     if ($self->{pid} != $$) {
@@ -49,11 +49,13 @@ sub fetch {
         $self->{pid} = $$;
     };
 
-    my $key = $name . (defined $arg ? ":$arg" : '');
+    my $key = $name . (defined $arg ? "\@$arg" : '');
 
     return $self->{rw_cache}{$key} //= do {
-        croak "Circular dependency detected for resource $name"
-            if $self->{pending}{$key};
+        if ($self->{pending}{$key}) {
+            my $loop = join ', ', sort keys %{ $self->{pending} };
+            croak "Circular dependency detected for resource $key: {$loop}";
+        };
         local $self->{pending}{$key} = 1;
 
         $self->{spec}->init($name)->($self, $name, $arg);
