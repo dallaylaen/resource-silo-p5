@@ -9,7 +9,7 @@ Resource::Silo::Controller - a facade to L<Resource::Silo> instance control meth
 
 =head1 DESCRIPTION
 
-As L<Resource::Silo::Container> is supposed to be inherited by the calling code,
+As L<Resource::Silo::Instance> is supposed to be inherited by the calling code,
 we cannot ensure that method names never clash. Therefore, we provide a single
 C<ctl> method that in turn provides access to instance lifecycle and management
 methods without polluting the common namespace.

@@ -1,11 +1,11 @@
-package Resource::Silo::Container;
+package Resource::Silo::Instance;
 
 use strict;
 use warnings;
 
 =head1 NAME
 
-Resource::Silo::Container - base resource storage class for L<Resource::Silo>.
+Resource::Silo::Instance - base resource storage class for L<Resource::Silo>.
 
 =head1 DESCRIPTION
 

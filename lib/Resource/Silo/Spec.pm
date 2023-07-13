@@ -14,7 +14,7 @@ Resource::Silo::Spec - description of known resource types for L<Resource::Silo>
 use Carp;
 use Scalar::Util qw(reftype);
 
-our @CARP_NOT = qw(Resource::Silo Resource::Silo::Container);
+our @CARP_NOT = qw(Resource::Silo Resource::Silo::Instance);
 
 =head2 new( $target )
 

@@ -76,7 +76,7 @@ Upon using Resource::Silo in your module, a number of things happen:
 
 =over
 
-=item * L<Resource::Silo::Container> and L<Exporter> are added to C<@ISA>;
+=item * L<Resource::Silo::Instance> and L<Exporter> are added to C<@ISA>;
 
 =item * a C<silo> function returning the "default" calling package instance
 (obtained via new()) is created and added to C<@EXPORT>;
@@ -170,7 +170,7 @@ use Carp;
 use Exporter;
 
 use Resource::Silo::Spec;
-use Resource::Silo::Container;
+use Resource::Silo::Instance;
 
 # Must enforce correctly freeing the resources, closing connections etc
 # before program ends.
@@ -203,7 +203,7 @@ sub import {
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
 
-    push @{"${target}::ISA"}, 'Resource::Silo::Container', 'Exporter';
+    push @{"${target}::ISA"}, 'Resource::Silo::Instance', 'Exporter';
     push @{"${target}::EXPORT"}, qw(silo);
     *{"${target}::metadata"} = sub { $spec };
     *{"${target}::resource"} = $resource;
@@ -251,7 +251,7 @@ Here is an example:
 
 =head1 CAVEATS AND CONSIDERATIONS
 
-See L<Resource::Silo::Container> for resource container implementation.
+See L<Resource::Silo::Instance> for resource container implementation.
 As of current, it is probably a bad idea to use L<Moose> on the same class
 as L<Resource::Silo>.
 
