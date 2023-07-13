@@ -21,12 +21,15 @@ our @CARP_NOT = qw(Resource::Silo Resource::Silo::Spec);
 =cut
 
 sub new {
-    my ($class) = @_;
-    my $self = {
+    my ($class, %stubs) = @_;
+    my $self = bless {
         pid  => $$,
         spec => $class->metadata,
+    }, $class;
+    foreach (keys %stubs) {
+        $self->{rw_cache}{$_} = $stubs{$_};
     };
-    return bless $self, $class;
+    return $self;
 };
 
 =head2 fetch( $resource_name )
