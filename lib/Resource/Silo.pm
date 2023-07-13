@@ -172,19 +172,32 @@ use Exporter;
 use Resource::Silo::Spec;
 use Resource::Silo::Container;
 
+# Must enforce correctly freeing the resources, closing connections etc
+# before program ends.
+my @todestroy;
+END {
+    $_->ctl->clean_cache
+        foreach @todestroy;
+};
+
 sub import {
     my $target = caller;
     my @export = qw(silo);
 
     my $spec = Resource::Silo::Spec->new($target);
 
+    # Eh? somehow this works without a prototype, so be it.
     my $resource = sub {
         $spec->add(@_);
     };
 
     my $instance;
-    my $silo = sub () { ## no critic 'prototypes'
-        return $instance //= $target->new();
+    my $silo = sub {
+        unless (defined $instance) {
+            $instance = $target->new;
+            push @todestroy, $instance;
+        };
+        return $instance;
     };
 
     no strict 'refs'; ## no critic
@@ -196,6 +209,7 @@ sub import {
     *{"${target}::resource"} = $resource;
     *{"${target}::silo"}     = $silo;
 };
+
 
 =head1 TESTING: LOCK AND OVERRIDES
 

@@ -104,4 +104,18 @@ sub unlock {
     return $self;
 };
 
+=head2 clean_cache
+
+Remove all cached resources.
+
+No cleanup is called whatsoever, but it may be added in the future.
+
+=cut
+
+sub clean_cache {
+    my $self = shift;
+    delete $$self->{rw_cache};
+    return $self;
+};
+
 1;
