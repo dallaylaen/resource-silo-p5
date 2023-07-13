@@ -1,82 +1,119 @@
 package Resource::Silo;
 
-use 5.006;
+use 5.010;
 use strict;
 use warnings;
 
+our $VERSION = 0.01;
+
 =head1 NAME
 
-Resource::Silo - The great new Resource::Silo!
+Resource::Silo - lazy declarative resource management for Perl.
 
-=cut
+=head1 DESCRIPTION
 
-our $VERSION = '0.01';
+We assume the following setup:
+
+=over
+
+=item   (i) The application needs to access multiple resources, such as
+configuration files, databases, queues, service endpoints, credentials, etc.
+
+=item  (ii) The application has helper scripts that don't need to initialize
+all the resources at once, as well as a test suite where accessing resources
+is undesirable unless a fixture or mock is provided.
+
+=item (iii) The resource management has to be decoupled from the application
+logic where possible.
+
+=back
+
+And we propose the following solution:
+
+=over
+
+=item   (i) All available resources are declared in a single module.
+
+=item  (ii) Such module is equipped with methods to access resources,
+as well as an exportable prototyped function for obtaining the one and true
+instance of it (AKA optional singleton).
+
+=item (iii) Every class or script in the project accesses resources
+through this module and only through it.
+
+=back
 
 =head1 SYNOPSIS
 
-    use Resource::Silo;
+    # in the resource module
+    package My::Project;
 
-    my $foo = Resource::Silo->new();
+    use Resource::Silo;
+    use DBI;
+    use YAML::LoadFile;
     ...
+
+    resource config => sub { LoadFile( ... ) };
+    resource dbh    => sub {
+        my $self = shift;
+        my $conf = $self->config->{dbh};
+        DBI->connect( $conf->{dsn}, $conf->{user}, $conf->{pass}, { RaiseError => 1 } );
+    };
+    resource queue  => sub { My::Queue->new( ... ) };
+    ...
+    1;
+
+    # elsewhere in modules or scripts
+    use My::Project qw(silo);
+
+    my $statement = silo->dbh->prepare( $sql );
+    my $queue = silo->queue;
+
 
 =head1 EXPORT
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head1 SUBROUTINES/METHODS
+=head2 resource 'name' => sub { ... };
 
 =cut
 
-use Exporter;
 use Carp;
+use Exporter;
 
 use Resource::Silo::Spec;
 use Resource::Silo::Container;
 
 sub import {
-    my $class = caller;
+    my $target = caller;
     my @export = qw(silo);
 
-    my $spec = Resource::Silo::Spec->new;
+    my $spec = Resource::Silo::Spec->new($target);
 
     my $resource = sub {
         my ($name, $init) = @_;
         $spec->add($name, $init);
-        no strict 'refs'; ## no critic
-        *{"${class}::$name"} = sub { $_[0]->fetch($name) };
     };
 
     my $instance;
-    my $silo = sub {
-        return $instance //= $class->new($spec);
-    };
-
-    my $import = sub {
-        my $class = caller;
-        no strict 'refs'; ## no critic
-        *{"${class}::silo"} = $silo;
+    my $silo = sub () { ## no critic 'prototypes'
+        return $instance //= $target->new($spec);
     };
 
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
 
-    @{"${class}::ISA"} = 'Resource::Silo::Container';
-    *{"${class}::metadata"} = $spec;
-    *{"${class}::import"} = $import;
-    *{"${class}::resource"} = $resource;
+    push @{"${target}::ISA"}, 'Resource::Silo::Container', 'Exporter';
+    push @{"${target}::EXPORT"}, qw(silo);
+    *{"${target}::metadata"} = sub { $spec };
+    *{"${target}::resource"} = $resource;
+    *{"${target}::silo"}     = $silo;
 };
-
-=head1 AUTHOR
-
-Konstantin Uvarin, C<< <khedin@gmail.com> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-Resource-Silo at rt.cpan.org>, or through
-the web interface at L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Resource-Silo>.
-
-
+Please report any bugs or feature requests to
+L<https://github.com/dallaylaen/resource-silo-p5/issues>
+or via RT:
+L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Resource-Silo>.
 
 
 =head1 SUPPORT
@@ -107,12 +144,14 @@ L<https://metacpan.org/release/Resource-Silo>
 
 =head1 ACKNOWLEDGEMENTS
 
+The module was names after a building in game Heroes of Might and Magic III.
 
-=head1 LICENSE AND COPYRIGHT
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
 
 This software is free software.
-
-Copyright (c) 2022 by Konstantin Uvarin.
+It is available on the same license terms as Perl itself.
 
 =cut
 

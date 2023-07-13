@@ -17,7 +17,7 @@ BEGIN {
                 Konstantin Uvarin
                 github metacpan annocpan CPAN perldoc RT
                 init
-                TBD DSL
+                TBD DSL AKA
             ]],
         }
     );

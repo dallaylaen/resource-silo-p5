@@ -19,8 +19,8 @@ No parameters yet.
 =cut
 
 sub new {
-    my $class = shift;
-    return bless {}, $class;
+    my ($class, $target) = @_;
+    return bless { target => $target }, $class;
 };
 
 =head2 add( $resource_name, ... )
@@ -35,6 +35,11 @@ sub add {
     # TODO allow more args
 
     $self->{init}{$name} = $init;
+
+    {
+        no strict 'refs'; ## no critic Strictures
+        *{"$self->{target}::$name"} = sub { $_[0]->fetch( $name ) };
+    }
     return $self;
 };
 
