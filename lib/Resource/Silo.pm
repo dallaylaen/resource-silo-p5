@@ -224,7 +224,7 @@ Thus, L<Resource::Silo> provides a mechanism to substitute a subset of resources
 with mocks and forbid the instantiation of the rest, thereby guarding against
 unwanted side-effects.
 
-The C<lock>/C<unlock> methods in L<Resource::Silo::Controller>,
+The C<lock>/C<unlock> methods in L<Resource::Silo::Control>,
 available via C<silo-E<gt>ctl> frontend,
 temporarily forbid instantiating new resources.
 The resources already in cache will still be OK though.

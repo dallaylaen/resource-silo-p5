@@ -16,7 +16,7 @@ Resource::Silo::Instance - base resource storage class for L<Resource::Silo>.
 use Carp;
 use Scalar::Util qw(reftype);
 
-use Resource::Silo::Controller;
+use Resource::Silo::Control;
 
 our @CARP_NOT = qw(Resource::Silo Resource::Silo::Spec);
 
@@ -43,7 +43,7 @@ Interface to control methods.
 =cut
 
 sub ctl {
-    return Resource::Silo::Controller->new(shift);
+    return Resource::Silo::Control->new(shift);
 };
 
 =head2 fetch( $resource_name )

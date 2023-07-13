@@ -1,11 +1,11 @@
-package Resource::Silo::Controller;
+package Resource::Silo::Control;
 
 use strict;
 use warnings;
 
 =head1 NAME
 
-Resource::Silo::Controller - a facade to L<Resource::Silo> instance control methods.
+Resource::Silo::Control - a facade to L<Resource::Silo> instance control methods.
 
 =head1 DESCRIPTION
 
