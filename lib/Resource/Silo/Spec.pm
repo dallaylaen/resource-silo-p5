@@ -14,8 +14,6 @@ Resource::Silo::Spec - description of known resource types for L<Resource::Silo>
 use Carp;
 use Scalar::Util qw(reftype);
 
-our @CARP_NOT = qw(Resource::Silo Resource::Silo::Instance);
-
 =head2 new( $target )
 
 $target is the name of the module where resource access methods will be created.
@@ -46,6 +44,12 @@ sub add {
         unshift @_, init => $init;
     }
     my (%spec) = @_;
+    my $target = $self->{target};
+
+    croak "resource: attempt to redefine resource '$name'"
+        if $self->spec($name);
+    croak "resource: attempt to replace existing method in $target"
+        if $target->can($name);
 
     my @extra = grep { !$known_args{$_} } keys %spec;
     croak "resource: unknown arguments in specification: @extra"
@@ -68,10 +72,15 @@ sub add {
     $self->{spec}{$name} = \%spec;
 
     {
-        my $method = sub { $_[0]->fetch( $name, $_[1] ) };
+        my $method = sub {
+            # enforce correct error attribution
+            # alas @CARP_NOT doesn't work here
+            package Resource::Silo::Instance;
+            $_[0]->fetch( $name, $_[1] );
+        };
 
         no strict 'refs'; ## no critic Strictures
-        *{"$self->{target}::$name"} = $method;
+        *{"${target}::$name"} = $method;
     }
 
     return $self;
@@ -87,6 +96,18 @@ Fetch specifications for given resource.
 sub spec {
     my ($self, $name) = @_;
     return $self->{spec}{$name};
+};
+
+=head2 generate_dsl
+
+Create C<resource> function closed over current object.
+
+=cut
+
+# TODO name!!
+sub generate_dsl {
+    my $inst = shift;
+    return sub { $inst->add(@_) };
 };
 
 1;

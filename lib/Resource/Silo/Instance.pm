@@ -18,8 +18,6 @@ use Scalar::Util qw(reftype);
 
 use Resource::Silo::Control;
 
-our @CARP_NOT = qw(Resource::Silo Resource::Silo::Spec);
-
 =head2 new
 
 =cut

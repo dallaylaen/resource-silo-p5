@@ -186,11 +186,6 @@ sub import {
 
     my $spec = Resource::Silo::Spec->new($target);
 
-    # Eh? somehow this works without a prototype, so be it.
-    my $resource = sub {
-        $spec->add(@_);
-    };
-
     my $instance;
     my $silo = sub {
         unless (defined $instance) {
@@ -206,7 +201,7 @@ sub import {
     push @{"${target}::ISA"}, 'Resource::Silo::Instance', 'Exporter';
     push @{"${target}::EXPORT"}, qw(silo);
     *{"${target}::metadata"} = sub { $spec };
-    *{"${target}::resource"} = $resource;
+    *{"${target}::resource"} = $spec->generate_dsl;
     *{"${target}::silo"}     = $silo;
 };
 
