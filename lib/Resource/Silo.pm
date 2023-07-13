@@ -89,8 +89,7 @@ sub import {
     my $spec = Resource::Silo::Spec->new($target);
 
     my $resource = sub {
-        my ($name, $init) = @_;
-        $spec->add($name, $init);
+        $spec->add(@_);
     };
 
     my $instance;

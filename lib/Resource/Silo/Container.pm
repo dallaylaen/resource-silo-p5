@@ -42,26 +42,43 @@ Typically C<silo-E<gt>foo> will call C<silo-E<gt>fetch("foo")> internally.
 
 sub fetch {
     my ($self, $name, $arg) = @_;
-    # TODO arg unused
 
-    croak "Arguments for resources unimplemented"
-        if defined $arg;
+    # Determine resource key ASAP
+    my $key = $name . (defined $arg && !ref $arg? "\@$arg" : '');
 
+    # If there was a fork, flush cache
     if ($self->{pid} != $$) {
         delete $self->{rw_cache};
         $self->{pid} = $$;
     };
 
-    my $key = $name . (defined $arg ? "\@$arg" : '');
-
+    # Return from cache (most common case), do sanity checks later
     return $self->{rw_cache}{$key} //= do {
+        my $spec = $self->{spec}->spec($name);
+
+        croak "Attempting to fetch nonexistent resource $name"
+            unless $spec;
+
+        if (my $check = $spec->{argument}) {
+            croak "Argument required for resource '$name'"
+                unless defined $arg;
+            croak "Argument for resource '$name' must be a scalar"
+                if ref $arg;
+            croak "Argument check failed for resource '$name': $arg"
+                unless $check->($arg);
+        } else {
+            croak "Argument not supported for resource '$name'"
+                if defined $arg;
+        };
+
+        # Detect circular dependencies
         if ($self->{pending}{$key}) {
             my $loop = join ', ', sort keys %{ $self->{pending} };
             croak "Circular dependency detected for resource $key: {$loop}";
         };
         local $self->{pending}{$key} = 1;
 
-        $self->{spec}->init($name)->($self, $name, $arg);
+        $spec->{init}->($self, $name, $arg);
     };
 };
 
