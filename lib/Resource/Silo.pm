@@ -186,6 +186,35 @@ sub import {
     *{"${target}::silo"}     = $silo;
 };
 
+=head1 CAVEATS AND CONSIDERATIONS
+
+See L<Resource::Silo::Container> for resource container implementation.
+As of current, it is probably a bad idea to use L<Moose> on the same class
+as L<Resource::Silo>.
+
+=head2 CACHING
+
+All resources are cached, the ones with arguments are cached together
+with the argument.
+
+=head2 FORKING
+
+If the process forks, resources such as database handles may become invalid
+or interfere with other processes' copies.
+As of current, if a change in the process ID is detected,
+the resource cache is erased altogether.
+
+This may changed in the future as some resources
+(e.g. configuration or endpoints) are stateless and don't require such checks.
+
+=head2 CIRCULAR DEPENDENCIES
+
+If a resource depends on other resources,
+those will be simply created upon request.
+
+It is possible to make several resources depend on each other.
+Trying to initialize such resource will cause an expection, however.
+
 =head1 BUGS
 
 Please report any bugs or feature requests to
