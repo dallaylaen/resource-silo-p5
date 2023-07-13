@@ -16,9 +16,9 @@ use Scalar::Util qw(reftype);
 
 our @CARP_NOT = qw(Resource::Silo Resource::Silo::Container);
 
-=head2 new
+=head2 new( $target )
 
-No parameters yet.
+$target is the name of the module where resource access methods will be created.
 
 =cut
 
@@ -34,8 +34,9 @@ Create resource type.
 =cut
 
 my %known_args = (
-    init      => 1,
-    argument  => 1,
+    init        => 1,
+    argument    => 1,
+    ignore_lock => 1,
 );
 sub add {
     my $self = shift;

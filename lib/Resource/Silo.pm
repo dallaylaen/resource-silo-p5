@@ -151,6 +151,17 @@ Example:
             );
         };
 
+=item * ignore_lock => 1 | 0
+
+Allow initializing resource, even when the resource container is put into
+locked mode.
+
+For example, if resource is derived from other resources, its creation
+may be safe as long as the dependencies have been mocked
+or already instantiated.
+
+(See the above example with L<Redis::Namespace>).
+
 =back
 
 =cut
@@ -185,6 +196,44 @@ sub import {
     *{"${target}::resource"} = $resource;
     *{"${target}::silo"}     = $silo;
 };
+
+=head1 TESTING: LOCK AND OVERRIDES
+
+It's usually a bad idea to access real-world resources in one's test suite,
+especially if it's e.g. a partner's endpoint.
+
+Now the #1 rule when it comes to mocks is to avoid mocks and instead design
+the modules in such a way that they can be tested in isolation.
+This however may not always be easily achievable.
+
+Thus, L<Resource::Silo> provides a mechanism to substitute a subset of resources
+with mocks and forbid the instantiation of the rest, thereby guarding against
+unwanted side-effects.
+
+The C<lock>/C<unlock> methods in L<Resource::Silo::Controller>,
+available via C<silo-E<gt>ctl> frontend,
+temporarily forbid instantiating new resources.
+The resources already in cache will still be OK though.
+
+The C<override> method allows to supply substitutes for resources or
+their initializers.
+
+The C<ignore_lock> flag in the resource definition may be used to indicate
+that a resource is safe to instantiate as long as its dependencies are
+either instantiated or mocked, e.g. a L<DBIx::Class> schema is probably fine
+as long as the underlying database connection is taken care of.
+
+Here is an example:
+
+    use Test::More;
+    use My::Project qw(silo);
+    silo->ctl->lock->override(
+        dbh => DBI->connect( 'dbi:SQLite:database=:memory:', '', '', { RaiseError => 1 ),
+    );
+
+    silo->dbh;                   # a mocked database
+    silo->schema;                # a DBIx::Class schema reliant on the dbh
+    silo->endpoint( 'partner' ); # an exception as endpoint wasn't mocked
 
 =head1 CAVEATS AND CONSIDERATIONS
 

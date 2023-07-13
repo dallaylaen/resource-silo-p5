@@ -14,6 +14,10 @@ Resource::Silo::Container - base resource storage class for L<Resource::Silo>.
 =cut
 
 use Carp;
+use Scalar::Util qw(reftype);
+
+use Resource::Silo::Controller;
+
 our @CARP_NOT = qw(Resource::Silo Resource::Silo::Spec);
 
 =head2 new
@@ -30,6 +34,16 @@ sub new {
         $self->{rw_cache}{$_} = $stubs{$_};
     };
     return $self;
+};
+
+=head2 C<ctl>
+
+Interface to control methods.
+
+=cut
+
+sub ctl {
+    return Resource::Silo::Controller->new(shift);
 };
 
 =head2 fetch( $resource_name )
@@ -71,6 +85,11 @@ sub fetch {
                 if defined $arg;
         };
 
+        croak "Attempting to initialize resource '$name' in locked mode"
+            if $self->{locked}
+                and !$spec->{ignore_lock}
+                and !$self->{override}{$name};
+
         # Detect circular dependencies
         if ($self->{pending}{$key}) {
             my $loop = join ', ', sort keys %{ $self->{pending} };
@@ -78,7 +97,7 @@ sub fetch {
         };
         local $self->{pending}{$key} = 1;
 
-        $spec->{init}->($self, $name, $arg);
+        ($self->{override}{$name} || $spec->{init})->($self, $name, $arg);
     };
 };
 
@@ -92,7 +111,6 @@ sub cached {
     my ($self, $name) = @_;
     return $self->{rw_cache}{$name};
 };
-
 
 
 1;
