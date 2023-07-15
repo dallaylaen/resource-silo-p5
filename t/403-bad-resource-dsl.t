@@ -16,6 +16,22 @@ do {
     use Resource::Silo;
 
     throws_ok {
+        resource;
+    } qr(^resource: .*identifier), 'no undef names';
+
+    throws_ok {
+        resource [], sub { };
+    } qr(^resource: .*identifier), 'no refs in names';
+
+    throws_ok {
+        resource 42, sub { };
+    } qr(^resource: .*identifier), 'names must be identifiers';
+
+    throws_ok {
+        resource '$', sub { };
+    } qr(^resource: .*identifier), 'names must be identifiers';
+
+    throws_ok {
         resource new => sub { };
     } qr(^resource: .*replace.*method), 'known method = no go';
     my $where = __FILE__." line ".(__LINE__-2);
