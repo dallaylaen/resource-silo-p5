@@ -162,6 +162,11 @@ or already instantiated.
 
 (See the above example with L<Redis::Namespace>).
 
+=item * ignore_cache => 1 | 0
+
+If set, don't cache resource, always create a fresh one instead.
+See also L<Resource::Silo::Instance/fresh>.
+
 =back
 
 =cut

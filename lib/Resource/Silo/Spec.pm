@@ -32,9 +32,10 @@ Create resource type. See L<Resource::Silo/resource> for details.
 =cut
 
 my %known_args = (
-    init        => 1,
-    argument    => 1,
-    ignore_lock => 1,
+    init            => 1,
+    argument        => 1,
+    ignore_lock     => 1,
+    ignore_cache    => 1,
 );
 sub add {
     my $self = shift;

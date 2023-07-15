@@ -111,6 +111,13 @@ sub cached {
 sub _make_resource_accessor {
     my ($name, $spec) = @_;
 
+    if ($spec->{ignore_cache}) {
+        return sub {
+            my ($self, $arg) = @_;
+            return $self->fresh($name, $arg);
+        };
+    };
+
     return sub {
         my ($self, $arg) = @_;
 
