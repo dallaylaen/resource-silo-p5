@@ -60,6 +60,7 @@ sub override {
         $$self->{override}{$name} = (reftype $init // '') eq 'CODE'
             ? $init
             : sub { $init };
+        delete $$self->{rw_cache}{$name};
     };
 
     return $self;
@@ -73,6 +74,8 @@ Remove all overrides set by C<override> call(s).
 
 sub clear_overrides {
     my $self = shift;
+    delete $$self->{rw_cache}{$_}
+        for keys %{ $$self->{override} };
     delete $$self->{override};
     return $self;
 };

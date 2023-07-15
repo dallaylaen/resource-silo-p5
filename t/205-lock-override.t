@@ -41,9 +41,13 @@ throws_ok {
 } qr(initialize.*locked mode), 'loading config is prohibited';
 like $@, qr('config'), 'we tried to load config, max_users was ok';
 
-$inst->ctl->unlock;
+$inst->ctl->unlock->clear_overrides;
 lives_and {
     is $inst->max_users, 42, 'can instantiate after unlock';
+};
+
+lives_and {
+    is $inst->redis(6), 'localhost:6', 'overrides are active no more';
 };
 
 done_testing;
