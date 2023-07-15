@@ -43,31 +43,6 @@ sub ctl {
     return Resource::Silo::Control->new(shift);
 };
 
-=head2 fetch( $resource_name )
-
-Fetch resource, lazily initializing it.
-
-Typically C<silo-E<gt>foo> will call C<silo-E<gt>fetch("foo")> internally.
-
-=cut
-
-sub fetch {
-    my ($self, $name, $arg) = @_;
-
-    # If there was a fork, flush cache
-    if ($self->{pid} != $$) {
-        delete $self->{rw_cache};
-        $self->{pid} = $$;
-    };
-
-    # Replace everything but strings with '';
-    #    we'll validate $arg later
-    my $key = defined $arg && !ref $arg ? $arg : '';
-
-    # Return from cache (most common case), do sanity checks later
-    return $self->{rw_cache}{$name}{$key} //= $self->fresh( $name, $arg );
-};
-
 =head2 fresh( $resource_name [, $argument ] )
 
 Instantiate resource and return it, ignoring cached value, if any.
@@ -128,6 +103,28 @@ Return cached resource without initializing.
 sub cached {
     my ($self, $name) = @_;
     return $self->{rw_cache}{$name}{''};
+};
+
+# We must create resource accessors in this package
+#   so that errors get attributed correctly
+#   (+ This way no other class need to know our internal structure)
+sub _make_resource_accessor {
+    my ($name, $spec) = @_;
+
+    return sub {
+        my ($self, $arg) = @_;
+
+        # If there was a fork, flush cache
+        if ($self->{pid} != $$) {
+            delete $self->{rw_cache};
+            $self->{pid} = $$;
+        };
+
+        # Stringify $arg ASAP, we'll validate it inside fresh().
+        # The cache entry for an invalid argument will never get populated.
+        my $key = defined $arg && !ref $arg ? $arg : '';
+        $self->{rw_cache}{$name}{$key} //= $self->fresh($name, $arg);
+    };
 };
 
 1;

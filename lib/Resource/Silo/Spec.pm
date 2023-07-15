@@ -27,7 +27,7 @@ sub new {
 
 =head2 add( $resource_name, ... )
 
-Create resource type.
+Create resource type. See L<Resource::Silo/resource> for details.
 
 =cut
 
@@ -46,6 +46,8 @@ sub add {
     my (%spec) = @_;
     my $target = $self->{target};
 
+    croak "resource: name must be an identifier"
+        unless defined $name and !ref $name and $name =~ /^[a-z][a-z_0-9]*/i;
     croak "resource: attempt to redefine resource '$name'"
         if $self->spec($name);
     croak "resource: attempt to replace existing method in $target"
@@ -71,16 +73,12 @@ sub add {
 
     $self->{spec}{$name} = \%spec;
 
+    # Move code generation into Resource::Silo::Instance
+    # so that exceptions via croak() are attributed correctly.
     {
-        my $method = sub {
-            # enforce correct error attribution
-            # alas @CARP_NOT doesn't work here
-            package Resource::Silo::Instance;
-            $_[0]->fetch( $name, $_[1] );
-        };
-
         no strict 'refs'; ## no critic Strictures
-        *{"${target}::$name"} = $method;
+        *{"${target}::$name"} =
+            Resource::Silo::Instance::_make_resource_accessor($name, \%spec);
     }
 
     return $self;
