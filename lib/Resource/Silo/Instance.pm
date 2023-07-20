@@ -61,22 +61,14 @@ architectural problem.
 sub fresh {
     my ($self, $name, $arg) = @_;
     my $spec = $self->{spec}->spec($name);
-    my $key = $name . (defined $arg && !ref $arg? "\@$arg" : '');
+    $arg //= '';
 
     croak "Attempting to fetch nonexistent resource $name"
         unless $spec;
-
-    if (my $check = $spec->{argument}) {
-        croak "Argument required for resource '$name'"
-            unless defined $arg;
-        croak "Argument for resource '$name' must be a scalar"
-            if ref $arg;
-        croak "Argument check failed for resource '$name': $arg"
-            unless $check->($arg);
-    } else {
-        croak "Argument not supported for resource '$name'"
-            if defined $arg;
-    };
+    croak "Argument for resource '$name' must be a scalar"
+        if ref $arg;
+    croak "Argument check failed for resource '$name': '$arg'"
+        unless $spec->{argument}->($arg);
 
     croak "Attempting to initialize resource '$name' in locked mode"
         if $self->{locked}
@@ -84,6 +76,7 @@ sub fresh {
             and !$self->{override}{$name};
 
     # Detect circular dependencies
+    my $key = $name . (length $arg ? "\@$arg" : '');
     if ($self->{pending}{$key}) {
         my $loop = join ', ', sort keys %{ $self->{pending} };
         croak "Circular dependency detected for resource $key: {$loop}";

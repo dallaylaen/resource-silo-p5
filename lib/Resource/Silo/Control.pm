@@ -121,4 +121,66 @@ sub clean_cache {
     return $self;
 };
 
+=head2 set_cache
+
+Set or delete a resource in the cache.
+
+=over
+
+=item * set_cache( resource_name => [ $instance ], ... )
+
+Set a resource without argument.
+
+=item * set_cache( resource_name => [ argument => $instance, ... ], ... )
+
+Set resource with arguments. Note that the argument checks will still be applied.
+
+=item * set_cache( resource_name => { argument => $instance, ... }, ... )
+
+Ditto.
+
+=item * set_cache( resource_name => undefined, ... )
+
+Clear cache for given resource(s), regardless of arguments.
+
+=back
+
+Note that C<set_cache( resource_name =E<gt> $instance )> is invalid
+as it may not be possible to distinguish it from one of the above forms.
+
+=cut
+
+sub set_cache {
+    my ($self, %resources) = @_;
+
+    RES: for my $name (keys %resources) {
+        my $toset = $resources{$name};
+
+        my $spec = $$self->{spec}->spec($name);
+        croak "Attempt to set unknown resource '$name'"
+            unless $spec;
+
+        if (!defined $toset) {
+            delete $$self->{rw_cache}{$name};
+            next RES;
+        } elsif (ref $toset eq 'ARRAY') {
+            unshift @$toset, '' if scalar @$toset == 1;
+            $toset = { @$toset };
+        } elsif (ref $toset eq 'HASH') {
+            # do nothing
+        } else {
+            croak "set_cache value must be undef, an array, or a hash, not "
+                .(ref $toset || "a scalar value '$toset'");
+        };
+
+        for (keys %$toset) {
+            croak "Attempt to set illegal argument '$_' for resource '$name'"
+                unless $spec->{argument}->( $_ );
+            $$self->{rw_cache}{$name}{$_} = $toset->{$_};
+        }
+    };
+
+    return $self;
+}
+
 1;
