@@ -18,11 +18,11 @@ use Test::Exception;
     resource config     => sub { +{ redis => 'localhost', max_users => 42 } };
     resource redis_conn => sub { $_[0]->config->{redis} };
     resource max_users  =>
-        ignore_lock         => 1,
+        assume_pure         => 1,
         init                => sub { $_[0]->config->{max_users} };
     resource redis      =>
         argument            => sub { 1 }, # anything goes
-        ignore_lock         => 1,
+        assume_pure         => 1,
         init                => sub { return ($_[0]->redis_conn . ":$_[2]") };
 }
 

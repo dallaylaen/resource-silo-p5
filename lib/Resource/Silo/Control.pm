@@ -85,7 +85,7 @@ sub clear_overrides {
 Forbid initializing new resources.
 
 The cached ones instantiated so far, the ones that have been overridden,
-and the ones with the C<ignore_lock> flag will still be returned.
+and the ones with the C<assume_pure> flag will still be returned.
 
 =cut
 

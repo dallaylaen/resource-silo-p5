@@ -34,7 +34,7 @@ Create resource type. See L<Resource::Silo/resource> for details.
 my %known_args = (
     init            => 1,
     argument        => 1,
-    ignore_lock     => 1,
+    assume_pure     => 1,
     ignore_cache    => 1,
 );
 sub add {

@@ -151,16 +151,18 @@ Example:
             );
         };
 
-=item * ignore_lock => 1 | 0
+=item * assume_pure => 1 | 0
 
-Allow initializing resource, even when the resource container is put into
-locked mode.
+Assume that the resource introduces no new side effects
+relative to its dependencies.
+(Like in the above example with L<Redis::Namespace>).
 
-For example, if resource is derived from other resources, its creation
-may be safe as long as the dependencies have been mocked
-or already instantiated.
+Or, for instance, a L<DBIx::Class> database schema is probably safe
+relative to the underlying L<DBI> handle.
 
-(See the above example with L<Redis::Namespace>).
+B<EFFECT:> This will allow initializing resource,
+even when the resource container is put into locked mode.
+See L<Resource::Silo::Control/lock>.
 
 =item * ignore_cache => 1 | 0
 
@@ -232,7 +234,7 @@ The resources already in cache will still be OK though.
 The C<override> method allows to supply substitutes for resources or
 their initializers.
 
-The C<ignore_lock> flag in the resource definition may be used to indicate
+The C<assume_pure> flag in the resource definition may be used to indicate
 that a resource is safe to instantiate as long as its dependencies are
 either instantiated or mocked, e.g. a L<DBIx::Class> schema is probably fine
 as long as the underlying database connection is taken care of.

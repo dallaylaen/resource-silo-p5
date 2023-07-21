@@ -72,7 +72,7 @@ sub fresh {
 
     croak "Attempting to initialize resource '$name' in locked mode"
         if $self->{locked}
-            and !$spec->{ignore_lock}
+            and !$spec->{assume_pure}
             and !$self->{override}{$name};
 
     # Detect circular dependencies
