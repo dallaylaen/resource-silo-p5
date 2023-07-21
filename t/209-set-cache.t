@@ -14,11 +14,19 @@ use Test::Exception;
 {
     package My::App;
     use Resource::Silo;
+    use List::Util qw(sum);
 
     resource fib => argument => qr/\d+/, sub {
         my ($self, $name, $arg) = @_;
         return ($arg <= 1) ? $arg : $self->$name($arg-1) + $self->$name($arg-2);
     };
+
+    resource prices => sub {
+        my $self = shift;
+        my $tmp = { foo => 42, bar => 137 };
+        $self->ctl->set_cache( prices => [ $tmp ] );
+        return { %$tmp, total => sum( values %$tmp ) };
+    }
 }
 
 subtest 'normal op' => sub {
@@ -35,6 +43,13 @@ subtest 'normal op' => sub {
     $res->ctl->set_cache( fib => undef )->set_cache( fib => { 1 => 2 } );
     is $res->fib(5), 10, 'doubled 1st number => all doubled';
     is $res->fib(10), 110, 'doubled 1st number => all doubled';
+};
+
+subtest 'bootstrap' => sub {
+    my $res = My::App->new;
+    is_deeply $res->prices,
+        { foo => 42, bar => 137, total => 42 + 137 },
+        'Bootstrapping a resource through an incomplete value';
 };
 
 subtest 'errors' => sub {
@@ -56,6 +71,5 @@ subtest 'errors' => sub {
         $res->ctl->set_cache( fib => 144 );
     } qr/must be.*array.* or .* hash.* not a scalar/, 'some scalar value = no go';
 };
-
 
 done_testing;
