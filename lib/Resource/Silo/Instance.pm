@@ -14,7 +14,7 @@ Resource::Silo::Instance - base resource storage class for L<Resource::Silo>.
 =cut
 
 use Carp;
-use Scalar::Util qw(reftype);
+use Scalar::Util qw(reftype blessed);
 
 use Resource::Silo::Control;
 
@@ -24,6 +24,7 @@ use Resource::Silo::Control;
 
 sub new {
     my $class = shift;
+    $class = ref $class if blessed $class;
     my $self = bless {
         pid  => $$,
         spec => $class->metadata,

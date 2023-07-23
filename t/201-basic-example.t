@@ -12,7 +12,7 @@ use Test::More;
 
 BEGIN {
     package My::Project::Res;
-    use Resource::Silo;
+    use Resource::Silo -class;
     use YAML::XS qw(LoadFile);
     use DBI;
     use DBD::SQLite;

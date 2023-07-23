@@ -11,7 +11,7 @@ use warnings;
 
 {
     package My::Res;
-    use Resource::Silo;
+    use Resource::Silo -class;
     my $count;
     resource foo => sub { ++$count };
 }

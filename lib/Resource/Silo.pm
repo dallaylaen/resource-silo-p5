@@ -32,23 +32,29 @@ And we propose the following solution:
 
 =over
 
-=item   (i) All available resources are declared in a single module.
+=item   (i) All available resources are declared in one place
+and encapsulated within a single container.
 
-=item  (ii) Such module is equipped with methods to access resources,
+=item  (ii) Such container is equipped with methods to access resources,
 as well as an exportable prototyped function for obtaining the one and true
 instance of it (AKA optional singleton).
 
 =item (iii) Every class or script in the project accesses resources
-through this module and only through it.
+through this container and only through it.
 
 =back
 
 =head1 SYNOPSIS
 
-    # in the resource module
-    package My::Project;
+The default mode is to create a one-off container for all resources
+and export if into the calling class via C<silo> function.
 
+Note that calling C<use Resource::Silo> from a different module will
+create a I<separate> container instance, but see below.
+
+    package My::App;
     use Resource::Silo;
+
     use DBI;
     use YAML::LoadFile;
     ...
@@ -61,46 +67,67 @@ through this module and only through it.
     };
     resource queue  => sub { My::Queue->new( ... ) };
     ...
-    1;
-
-    # elsewhere in modules or scripts
-    use My::Project qw(silo);
 
     my $statement = silo->dbh->prepare( $sql );
     my $queue = silo->queue;
 
+For more complicated projects, it may make sense
+to create a dedicated class for resource management:
+
+    # in the container class
+    package My::Project::Res;
+    use Resource::Silo -class;      # resource definitions will now create
+                                    # eponymous methods in My::Project::Res
+
+    resource foo => sub { ... };    # declare resources as in the above example
+    resource bar => sub { ... };
+
+    1;
+
+    # in all other modules/packages/scripts:
+
+    package My::Project;
+    use My::Project::Res qw(silo);
+
+    silo->foo;                      # obtain resources
+    silo->bar;
+
+    My::Project::Res->new;          # separate empty resource container
 
 =head1 EXPORT
 
-Upon using Resource::Silo in your module, a number of things happen:
+The following functions will be exported into the calling module,
+unconditionally:
+
+=over
+
+=item * silo - a singleton function returning the resource container.
+Note that this function will be created separately for every calling module,
+and needs to be re-exported to be shared.
+
+=item * resource - a DSL for defining resources, their initialization
+and properties. See below.
+
+=back
+
+Additionally, if the C<-class> argument was added to the use line,
+the following things happen:
 
 =over
 
 =item * L<Resource::Silo::Instance> and L<Exporter> are added to C<@ISA>;
 
-=item * a C<silo> function returning the "default" calling package instance
-(obtained via new()) is created and added to C<@EXPORT>;
+=item * C<silo> function is added to C<@EXPORT> and thus becomes re-exported
+by default;
 
 =item * a C<metadata> function/method returning
 a static L<Resource::Silo::Spec> object is created;
 
-=item * a C<resource> function is created that can be used to define resources.
+=item * calling C<resource> creates a corresponding method in this package.
 
 =back
 
-=head2 silo
-
-silo() always returns the same object, creating it if necessary.
-
-This is how other modules in the project are supposed to access the resources:
-
-    # in My::Project::Some::Module
-    use My::Project::Resources;
-    silo->dbh; # returns a database handler defined in My::Project::Resources
-
-=head2 metadata
-
-Returns a static L<Resource::Silo::Spec> object associated with this package.
+=head1 RESOURCE DEFINITION
 
 =head2 resource
 
@@ -187,9 +214,23 @@ END {
         foreach @todestroy;
 };
 
+
 sub import {
-    my $target = caller;
-    my @export = qw(silo);
+    my ($self, @param) = @_;
+    my $caller = caller;
+    my $target;
+
+    while (@param) {
+        my $flag = shift @param;
+        if ($flag eq '-class') {
+            $target = $caller;
+        } else {
+            # TODO if there's more than 3 elsifs, use jump table instead
+            croak "Unexpected parameter to 'use $self': '$flag'";
+        };
+    };
+
+    $target ||= __PACKAGE__."::container::".$caller;
 
     my $spec = Resource::Silo::Spec->new($target);
 
@@ -205,11 +246,13 @@ sub import {
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
 
-    push @{"${target}::ISA"}, 'Resource::Silo::Instance', 'Exporter';
-    push @{"${target}::EXPORT"}, qw(silo);
+    push @{"${target}::ISA"}, 'Resource::Silo::Instance';
     *{"${target}::metadata"} = sub { $spec };
-    *{"${target}::resource"} = $spec->generate_dsl;
-    *{"${target}::silo"}     = $silo;
+
+    push @{"${caller}::ISA"}, 'Exporter';
+    push @{"${caller}::EXPORT"}, qw(silo);
+    *{"${caller}::resource"} = $spec->generate_dsl;
+    *{"${caller}::silo"}     = $silo;
 };
 
 

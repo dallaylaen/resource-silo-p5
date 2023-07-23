@@ -13,7 +13,7 @@ use Test::Exception;
 
 {
     package My::Project;
-    use Resource::Silo;
+    use Resource::Silo -class;
 
     resource foo => sub { $_[0]->bar };
     resource bar => sub { $_[0]->foo };

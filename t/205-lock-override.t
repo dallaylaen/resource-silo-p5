@@ -12,42 +12,37 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-{
-    package My::Project;
-    use Resource::Silo;
-    resource config     => sub { +{ redis => 'localhost', max_users => 42 } };
-    resource redis_conn => sub { $_[0]->config->{redis} };
-    resource max_users  =>
-        assume_pure         => 1,
-        init                => sub { $_[0]->config->{max_users} };
-    resource redis      =>
-        argument            => sub { 1 }, # anything goes
-        assume_pure         => 1,
-        init                => sub { return ($_[0]->redis_conn . ":$_[2]") };
-}
+use Resource::Silo;
+resource config     => sub { +{ redis => 'localhost', max_users => 42 } };
+resource redis_conn => sub { $_[0]->config->{redis} };
+resource max_users  =>
+    assume_pure         => 1,
+    init                => sub { $_[0]->config->{max_users} };
+resource redis      =>
+    argument            => sub { 1 }, # anything goes
+    assume_pure         => 1,
+    init                => sub { return ($_[0]->redis_conn . ":$_[2]") };
 
-my $inst = My::Project->new;
-
-$inst->ctl->lock->override(
+silo->ctl->lock->override(
     redis_conn => 'mock',
 );
 
 lives_and {
-    is $inst->redis('foo'), 'mock:foo', 'redis falls through and redis_conn is mocked';
+    is silo->redis('foo'), 'mock:foo', 'redis falls through and redis_conn is mocked';
 };
 
 throws_ok {
-    $inst->max_users;
+    silo->max_users;
 } qr(initialize.*locked mode), 'loading config is prohibited';
 like $@, qr('config'), 'we tried to load config, max_users was ok';
 
-$inst->ctl->unlock->clear_overrides;
+silo->ctl->unlock->clear_overrides;
 lives_and {
-    is $inst->max_users, 42, 'can instantiate after unlock';
+    is silo->max_users, 42, 'can instantiate after unlock';
 };
 
 lives_and {
-    is $inst->redis(6), 'localhost:6', 'overrides are active no more';
+    is silo->redis(6), 'localhost:6', 'overrides are active no more';
 };
 
 done_testing;

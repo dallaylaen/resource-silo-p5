@@ -29,14 +29,11 @@ END {
     };
 }
 
-{
-    package My::App;
-    use Resource::Silo;
-    resource foo => sub { My::Res->new };
-}
+use Resource::Silo;
+resource foo => sub { My::Res->new };
 
 is $counter, 0, 'nothing is initialized';
-is ref My::App::silo->foo, 'My::Res', 'created a resource';
+is ref silo->foo, 'My::Res', 'created a resource';
 is $counter, 1, 'counter increased';
 
 END {

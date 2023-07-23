@@ -13,7 +13,7 @@ use Test::Exception;
 
 {
     package My::App;
-    use Resource::Silo;
+    use Resource::Silo -class;
     use List::Util qw(sum);
 
     resource fib => argument => qr/\d+/, sub {

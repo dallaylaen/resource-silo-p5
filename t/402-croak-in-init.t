@@ -14,7 +14,7 @@ use Test::Exception;
 
 {
     package My::Project;
-    use Resource::Silo;
+    use Resource::Silo -class;
     use Carp;
 
     resource foo => sub { croak "Resource unimplemented" };
