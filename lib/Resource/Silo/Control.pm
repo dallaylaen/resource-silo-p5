@@ -183,4 +183,25 @@ sub set_cache {
     return $self;
 }
 
+=head2 preload( \@list )
+
+Try loading all the resources that have C<preload> flag set.
+
+May be useful if e.g. a server-side application is starting and must
+check its database connection(s) before it starts handling any clients.
+
+=cut
+
+sub preload {
+    my $self = shift;
+    # TODO allow specifying resources to load
+    #      but first come up with a way of specifying arguments, too.
+
+    my $list = $$self->{spec}->{preload};
+    for my $name (@$list) {
+        my $unused = $$self->$name;
+    };
+    return $self;
+};
+
 1;

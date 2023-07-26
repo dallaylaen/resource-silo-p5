@@ -22,7 +22,10 @@ $target is the name of the module where resource access methods will be created.
 
 sub new {
     my ($class, $target) = @_;
-    return bless { target => $target }, $class;
+    return bless {
+        target  => $target,
+        preload => [],
+    }, $class;
 };
 
 =head2 add( $resource_name, ... )
@@ -36,6 +39,7 @@ my %known_args = (
     argument        => 1,
     assume_pure     => 1,
     ignore_cache    => 1,
+    preload         => 1,
 );
 sub add {
     my $self = shift;
@@ -71,6 +75,10 @@ sub add {
     } else {
         croak "resource: argument must be a regexp or function";
     }
+
+    if ($spec{preload}) {
+        push @{ $self->{preload} }, $name;
+    };
 
     $self->{spec}{$name} = \%spec;
 

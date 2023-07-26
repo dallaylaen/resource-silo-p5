@@ -196,6 +196,10 @@ See L<Resource::Silo::Control/lock>.
 If set, don't cache resource, always create a fresh one instead.
 See also L<Resource::Silo::Instance/fresh>.
 
+=item * preload => 1 | 0
+
+If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
+
 =back
 
 =cut
