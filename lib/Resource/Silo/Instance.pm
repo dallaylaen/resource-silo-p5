@@ -5,9 +5,18 @@ use warnings;
 
 =head1 NAME
 
-Resource::Silo::Instance - base resource storage class for L<Resource::Silo>.
+Resource::Silo::Instance - base resource container class for L<Resource::Silo>.
 
 =head1 DESCRIPTION
+
+L<Resource::Silo> isolates resources by storing them
+inside a container object.
+
+The methods of such an object are generated on the fly and stored either
+in a special virtual package, or the calling module.
+
+This class provides some common functionality that allows to access resources,
+as well as a doorway into a fine-grained control interface.
 
 =head1 METHODS
 
@@ -16,7 +25,12 @@ Resource::Silo::Instance - base resource storage class for L<Resource::Silo>.
 use Carp;
 use Scalar::Util qw( blessed reftype weaken );
 
-=head2 new
+=head2 new( resource => $override, ... )
+
+Create a new container (also available as C<silo-E<gt>new>).
+
+If arguments are given, they will be passed to the
+L</override> method (see below).
 
 =cut
 
@@ -77,14 +91,13 @@ sub fresh {
 
 =head2 cached( $resource_name )
 
-Return cached resource without initializing.
+Return a cached resource instance without initializing.
 
 =cut
 
-# TODO move to Control, handle args
 sub cached {
-    my ($self, $name) = @_;
-    return $self->{rw_cache}{$name}{''};
+    my ($self, $name, $arg) = @_;
+    return $self->{rw_cache}{$name}{$arg // ''};
 };
 
 # We must create resource accessors in this package
@@ -306,7 +319,7 @@ sub set_cache {
     return $self;
 }
 
-=head2 preload( \@list )
+=head2 preload()
 
 Try loading all the resources that have C<preload> flag set.
 
