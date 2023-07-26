@@ -89,17 +89,6 @@ sub fresh {
     ($self->{override}{$name} || $spec->{init})->($self, $name, $arg);
 };
 
-=head2 cached( $resource_name )
-
-Return a cached resource instance without initializing.
-
-=cut
-
-sub cached {
-    my ($self, $name, $arg) = @_;
-    return $self->{rw_cache}{$name}{$arg // ''};
-};
-
 # We must create resource accessors in this package
 #   so that errors get attributed correctly
 #   (+ This way no other class need to know our internal structure)
@@ -318,6 +307,19 @@ sub set_cache {
 
     return $self;
 }
+
+=head2 cached( $resource_name, [$argument] )
+
+Return a cached resource instance without initializing
+(or C<undef> if the resource was never initialized).
+
+=cut
+
+sub cached {
+    my ($self, $name, $arg) = @_;
+    return $$self->{rw_cache}{$name}{$arg // ''};
+};
+
 
 =head2 preload()
 

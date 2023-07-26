@@ -31,12 +31,12 @@ BEGIN {
 
 use My::Project::Res;
 
-is silo->cached("config"), undef, 'config not loaded yet';
+is silo->ctl->cached("config"), undef, 'config not loaded yet';
 
 my $dbh = silo->dbh;
 
 ok ref $dbh, 'SLQite loaded';
-is ref silo->cached('config'), 'HASH', 'config loaded';
-is silo->cached('config')->{foo}, 42, 'known value present in config';
+is ref silo->ctl->cached('config'), 'HASH', 'config loaded';
+is silo->ctl->cached('config')->{foo}, 42, 'known value present in config';
 
 done_testing;
