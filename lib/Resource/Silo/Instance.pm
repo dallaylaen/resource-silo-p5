@@ -46,22 +46,9 @@ sub new {
     return $self;
 };
 
-=head2 fresh( $resource_name [, $argument ] )
-
-Instantiate resource and return it, ignoring cached value, if any.
-This may be useful if the resource's state is going to be modified
-in a manner incompatible with its other consumers within the same process.
-
-E.g. performing a Big Evil SQL Transaction while other parts of the application
-are happily using L<DBIx::Class>.
-
-B<NOTE> Use with caution.
-Resorting to this method frequently may be a sign of a broader
-architectural problem.
-
-=cut
-
-sub fresh {
+# Instantiate resource $name with argument $argument.
+# This is what a silo->resource_name calls after checking the cache.
+sub _instantiate {
     my ($self, $name, $arg) = @_;
     my $spec = $self->{spec}->spec($name);
     $arg //= '';
@@ -98,7 +85,7 @@ sub _make_resource_accessor {
     if ($spec->{ignore_cache}) {
         return sub {
             my ($self, $arg) = @_;
-            return $self->fresh($name, $arg);
+            return $self->_instantiate($name, $arg);
         };
     };
 
@@ -111,10 +98,10 @@ sub _make_resource_accessor {
             $self->{pid} = $$;
         };
 
-        # Stringify $arg ASAP, we'll validate it inside fresh().
+        # Stringify $arg ASAP, we'll validate it inside _instantiate().
         # The cache entry for an invalid argument will never get populated.
         my $key = defined $arg && !ref $arg ? $arg : '';
-        $self->{rw_cache}{$name}{$key} //= $self->fresh($name, $arg);
+        $self->{rw_cache}{$name}{$key} //= $self->_instantiate($name, $arg);
     };
 };
 
@@ -340,6 +327,25 @@ sub preload {
         my $unused = $$self->$name;
     };
     return $self;
+};
+
+=head2 fresh( $resource_name [, $argument ] )
+
+Instantiate resource and return it, ignoring cached value, if any.
+This may be useful if the resource's state is going to be modified
+in a manner incompatible with its other consumers within the same process.
+
+E.g. performing a Big Evil SQL Transaction while other parts of the application
+are happily using L<DBIx::Class>.
+
+B<NOTE> Use with caution.
+Resorting to this method frequently may be a sign of a broader
+architectural problem.
+
+=cut
+
+sub fresh {
+    return ${+shift}->_instantiate(@_);
 };
 
 1;

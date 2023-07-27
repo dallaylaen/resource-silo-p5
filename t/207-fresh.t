@@ -32,8 +32,8 @@ resource witharg =>
 is silo->noarg->id, 1, 'Cached object w/o argument';
 is silo->noarg->id, 1, 'Cached object w/o argument = cached version';
 
-is silo->fresh("noarg")->id, 2, 'Uncached object w/o argument';
-is silo->fresh("noarg")->id, 3, 'Uncached object w/o argument - new id';
+is silo->ctl->fresh("noarg")->id, 2, 'Uncached object w/o argument';
+is silo->ctl->fresh("noarg")->id, 3, 'Uncached object w/o argument - new id';
 
 is silo->noarg->id, 1, "Cached object w/o argument didn't change";
 
