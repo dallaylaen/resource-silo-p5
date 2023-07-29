@@ -49,6 +49,11 @@ sub new {
     return $self;
 };
 
+sub DESTROY {
+    my $self = shift;
+    $self->ctl->cleanup;
+};
+
 # Instantiate resource $name with argument $argument.
 # This is what a silo->resource_name calls after checking the cache.
 sub _instantiate_resource {
@@ -63,6 +68,8 @@ sub _instantiate_resource {
     croak "Argument check failed for resource '$name': '$arg'"
         unless $spec->{argument}->($arg);
 
+    croak "Attempting to initialize resource in destructor"
+        if $self->{-cleanup};
     croak "Attempting to initialize resource '$name' in locked mode"
         if $self->{-locked}
             and !$spec->{assume_pure}
@@ -75,8 +82,25 @@ sub _instantiate_resource {
         croak "Circular dependency detected for resource $key: {$loop}";
     };
     local $self->{-pending}{$key} = 1;
+    if ($spec->{cleanup}) {
+        $self->{-tocleanup}{$name} //= $spec->{cleanup};
+    };
 
     ($self->{-override}{$name} || $spec->{init})->($self, $name, $arg);
+};
+
+# use instead of delete $self->{-cache}{$name}
+sub _cleanup_resource {
+    my ($self, $name) = @_;
+
+    if (!$self->{-override}{$name} and $self->{-tocleanup}{$name}) {
+        my $action = delete $self->{-tocleanup}{$name};
+        foreach my $specimen( values %{ $self->{-cache}{$name} } ) {
+            $action->[2]->($specimen);
+        };
+    };
+
+    delete $self->{-cache}{$name};
 };
 
 # We must create resource accessors in this package
@@ -97,6 +121,7 @@ sub _make_resource_accessor {
 
         # If there was a fork, flush cache
         if ($self->{-pid} != $$) {
+            # TODO invent some post-fork cleanup - but not now
             delete $self->{-cache};
             $self->{-pid} = $$;
         };
@@ -175,7 +200,7 @@ sub override {
         $$self->{-override}{$name} = (reftype $init // '') eq 'CODE'
             ? $init
             : sub { $init };
-        delete $$self->{-cache}{$name};
+        $$self->_cleanup_resource($name);
     };
 
     return $self;
@@ -189,6 +214,7 @@ Remove all overrides set by C<override> call(s).
 
 sub clear_overrides {
     my $self = shift;
+    # Not calling cleanup for overrides!
     delete $$self->{-cache}{$_}
         for keys %{ $$self->{-override} };
     delete $$self->{-override};
@@ -219,20 +245,6 @@ Remove the lock set by C<lock>.
 sub unlock {
     my $self = shift;
     delete $$self->{-locked};
-    return $self;
-};
-
-=head2 clean_cache
-
-Remove all cached resources.
-
-No cleanup is called whatsoever, but it may be added in the future.
-
-=cut
-
-sub clean_cache {
-    my $self = shift;
-    delete $$self->{-cache};
     return $self;
 };
 
@@ -267,6 +279,9 @@ as it may not be possible to distinguish it from one of the above forms.
 
 sub set_cache {
     my ($self, %resources) = @_;
+
+    croak "attempt to update cache in destruction phase"
+        if $$self->{-cleanup};
 
     RES: for my $name (keys %resources) {
         my $toset = $resources{$name};
@@ -330,6 +345,34 @@ sub preload {
         my $unused = $$self->$name;
     };
     return $self;
+};
+
+=head2 cleanup
+
+Cleanup all resources.
+Once the cleanup is started, no more resources can be created,
+and trying to do so will result in exception.
+Typically only useful for destruction.
+
+=cut
+
+sub cleanup {
+    my $self = ${ $_[0] };
+    $self->{-cleanup} = 1; # This is stronger than lock.
+    my @order = sort {
+        $a->[1] <=> $b->[1];
+    } values %{ $self->{-tocleanup} };
+
+    foreach my $item (@order) {
+        my ($name, undef, $action) = @$item;
+        foreach my $res (values %{ $self->{-cache}{$name} }) {
+            $action->($res);
+        };
+        delete $self->{-cache}{$name};
+    };
+
+    delete $self->{-cache};
+    return $_[0];
 };
 
 =head2 fresh( $resource_name [, $argument ] )

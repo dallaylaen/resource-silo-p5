@@ -221,8 +221,9 @@ use Resource::Silo::Instance;
 # before program ends.
 my @todestroy;
 END {
-    $_->ctl->clean_cache
-        foreach @todestroy;
+    foreach my $container (@todestroy) {
+        $container->ctl->cleanup;
+    };
 };
 
 sub import {

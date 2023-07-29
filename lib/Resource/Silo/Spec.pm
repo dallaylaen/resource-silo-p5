@@ -12,7 +12,7 @@ Resource::Silo::Spec - description of known resource types for L<Resource::Silo>
 =cut
 
 use Carp;
-use Scalar::Util qw(reftype);
+use Scalar::Util qw( looks_like_number reftype );
 
 =head2 new( $target )
 
@@ -35,10 +35,12 @@ Create resource type. See L<Resource::Silo/resource> for details.
 =cut
 
 my %known_args = (
-    init            => 1,
     argument        => 1,
     assume_pure     => 1,
+    cleanup         => 1,
+    cleanup_delay   => 1,
     ignore_cache    => 1,
+    init            => 1,
     preload         => 1,
 );
 sub add {
@@ -74,6 +76,18 @@ sub add {
         # do nothing, we're fine
     } else {
         croak "resource: argument must be a regexp or function";
+    }
+
+    if (defined $spec{cleanup} || $spec{cleanup_delay}) {
+        $spec{cleanup} //= sub {}; # in case we want just delay
+        $spec{cleanup_delay} //= 0;
+        croak "resource: cleanup must be a function"
+            unless reftype $spec{cleanup} eq 'CODE';
+        croak "resource: cleanup_delay must be a number"
+            unless looks_like_number($spec{cleanup_delay});
+        croak "resource: cleanup is useless while ignore_cache is in use"
+            if $spec{ignore_cache};
+        $spec{cleanup} = [ $name, $spec{cleanup_dealy}, $spec{cleanup} ];
     }
 
     if ($spec{preload}) {

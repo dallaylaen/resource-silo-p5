@@ -37,7 +37,7 @@ is ref silo->foo, 'My::Res', 'created a resource';
 is $counter, 1, 'counter increased';
 
 END {
-is $counter, 1, 'counter still nonzero';
+    is $counter, 1, 'counter still nonzero';
 };
 # see END block above
 
