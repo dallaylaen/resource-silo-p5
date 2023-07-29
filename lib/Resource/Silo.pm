@@ -37,7 +37,7 @@ and encapsulated within a single container.
 
 =item  (ii) Such container is equipped with methods to access resources,
 as well as an exportable prototyped function for obtaining the one and true
-instance of it (AKA optional singleton).
+instance of it (a.k.a. optional singleton).
 
 =item (iii) Every class or script in the project accesses resources
 through this container and only through it.
@@ -50,7 +50,11 @@ The default mode is to create a one-off container for all resources
 and export if into the calling class via C<silo> function.
 
 Note that calling C<use Resource::Silo> from a different module will
-create a I<separate> container instance, but see below.
+create a I<separate> container instance. You'll have to re-export
+(or otherwise provide access to) the C<silo> function.
+
+I<This is done on purpose so that multiple projects or modules can coexist
+within the same interpreter without interference.>
 
     package My::App;
     use Resource::Silo;
@@ -71,7 +75,7 @@ create a I<separate> container instance, but see below.
     my $statement = silo->dbh->prepare( $sql );
     my $queue = silo->queue;
 
-For more complicated projects, it may make sense
+For more complicated projects, it may make more sense
 to create a dedicated class for resource management:
 
     # in the container class
@@ -134,7 +138,7 @@ a static L<Resource::Silo::Spec> object is created;
     resource 'name' => sub { ... };
     resource 'name' => %options;
 
-Define a resource.
+Declare a resource.
 
 %options may include:
 
@@ -145,14 +149,14 @@ Define a resource.
 A coderef to obtain the resource. Required.
 
 If the number of arguments is odd,
-the last one is shifted and considered to be the init function.
+the last one is popped and considered to be the init function.
 
 =item * argument => C<sub { ... }> || C<qr( ... )>
 
 A sanity check on a string argument for the resource fetching function.
 
 If specified, the argument must always be supplied, the regular expression
-must match I<the whole> string, and the function return a true value.
+must match I<the whole> string, and the function must return a true value.
 Otherwise an exception will be raised.
 
 Example:
@@ -199,6 +203,8 @@ See also L<Resource::Silo::Instance/fresh>.
 =item * preload => 1 | 0
 
 If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
+Useful if you want to throw errors when a service is starting,
+not during request request processing.
 
 =back
 
@@ -218,7 +224,6 @@ END {
     $_->ctl->clean_cache
         foreach @todestroy;
 };
-
 
 sub import {
     my ($self, @param) = @_;
@@ -259,7 +264,6 @@ sub import {
     *{"${caller}::resource"} = $spec->generate_dsl;
     *{"${caller}::silo"}     = $silo;
 };
-
 
 =head1 TESTING: LOCK AND OVERRIDES
 
@@ -328,6 +332,15 @@ those will be simply created upon request.
 It is possible to make several resources depend on each other.
 Trying to initialize such resource will cause an expection, however.
 
+=head1 SEE ALSO
+
+L<Bread::Board> - a more mature IoC / DI framework.
+
+=head1 ACKNOWLEDGEMENTS
+
+The module was names after a building in the game
+B<I<Heroes of Might and Magic III.>>
+
 =head1 BUGS
 
 Please report any bugs or feature requests to
@@ -335,13 +348,11 @@ L<https://github.com/dallaylaen/resource-silo-p5/issues>
 or via RT:
 L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Resource-Silo>.
 
-
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc Resource::Silo
-
 
 You can also look for information at:
 
@@ -360,11 +371,6 @@ L<https://cpanratings.perl.org/d/Resource-Silo>
 L<https://metacpan.org/release/Resource-Silo>
 
 =back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-The module was names after a building in game Heroes of Might and Magic III.
 
 =head1 COPYRIGHT AND LICENSE
 
