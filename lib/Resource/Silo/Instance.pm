@@ -34,12 +34,15 @@ L</override> method (see below).
 
 =cut
 
+# NOTE to the editor. As we want to stay compatible with Moo/Moose,
+# please make sure all internal fields start with a hyphen ("-").
+
 sub new {
     my $class = shift;
     $class = ref $class if blessed $class;
     my $self = bless {
-        pid  => $$,
-        spec => $class->metadata,
+        -pid  => $$,
+        -spec => $class->metadata,
     }, $class;
     $self->ctl->override( @_ )
         if @_;
@@ -48,9 +51,9 @@ sub new {
 
 # Instantiate resource $name with argument $argument.
 # This is what a silo->resource_name calls after checking the cache.
-sub _instantiate {
+sub _instantiate_resource {
     my ($self, $name, $arg) = @_;
-    my $spec = $self->{spec}->spec($name);
+    my $spec = $self->{-spec}->spec($name);
     $arg //= '';
 
     croak "Attempting to fetch nonexistent resource $name"
@@ -61,19 +64,19 @@ sub _instantiate {
         unless $spec->{argument}->($arg);
 
     croak "Attempting to initialize resource '$name' in locked mode"
-        if $self->{locked}
+        if $self->{-locked}
             and !$spec->{assume_pure}
-            and !$self->{override}{$name};
+            and !$self->{-override}{$name};
 
     # Detect circular dependencies
     my $key = $name . (length $arg ? "\@$arg" : '');
-    if ($self->{pending}{$key}) {
-        my $loop = join ', ', sort keys %{ $self->{pending} };
+    if ($self->{-pending}{$key}) {
+        my $loop = join ', ', sort keys %{ $self->{-pending} };
         croak "Circular dependency detected for resource $key: {$loop}";
     };
-    local $self->{pending}{$key} = 1;
+    local $self->{-pending}{$key} = 1;
 
-    ($self->{override}{$name} || $spec->{init})->($self, $name, $arg);
+    ($self->{-override}{$name} || $spec->{init})->($self, $name, $arg);
 };
 
 # We must create resource accessors in this package
@@ -85,7 +88,7 @@ sub _make_resource_accessor {
     if ($spec->{ignore_cache}) {
         return sub {
             my ($self, $arg) = @_;
-            return $self->_instantiate($name, $arg);
+            return $self->_instantiate_resource($name, $arg);
         };
     };
 
@@ -93,15 +96,15 @@ sub _make_resource_accessor {
         my ($self, $arg) = @_;
 
         # If there was a fork, flush cache
-        if ($self->{pid} != $$) {
-            delete $self->{rw_cache};
-            $self->{pid} = $$;
+        if ($self->{-pid} != $$) {
+            delete $self->{-cache};
+            $self->{-pid} = $$;
         };
 
-        # Stringify $arg ASAP, we'll validate it inside _instantiate().
+        # Stringify $arg ASAP, we'll validate it inside _instantiate_resource().
         # The cache entry for an invalid argument will never get populated.
         my $key = defined $arg && !ref $arg ? $arg : '';
-        $self->{rw_cache}{$name}{$key} //= $self->_instantiate($name, $arg);
+        $self->{-cache}{$name}{$key} //= $self->_instantiate_resource($name, $arg);
     };
 };
 
@@ -167,12 +170,12 @@ sub override {
 
     foreach my $name (keys %subst) {
         croak "Attempt to override unknown resource $name"
-            unless $$self->{spec}->spec($name);
+            unless $$self->{-spec}->spec($name);
         my $init = $subst{$name};
-        $$self->{override}{$name} = (reftype $init // '') eq 'CODE'
+        $$self->{-override}{$name} = (reftype $init // '') eq 'CODE'
             ? $init
             : sub { $init };
-        delete $$self->{rw_cache}{$name};
+        delete $$self->{-cache}{$name};
     };
 
     return $self;
@@ -186,9 +189,9 @@ Remove all overrides set by C<override> call(s).
 
 sub clear_overrides {
     my $self = shift;
-    delete $$self->{rw_cache}{$_}
-        for keys %{ $$self->{override} };
-    delete $$self->{override};
+    delete $$self->{-cache}{$_}
+        for keys %{ $$self->{-override} };
+    delete $$self->{-override};
     return $self;
 };
 
@@ -203,7 +206,7 @@ and the ones with the C<assume_pure> flag will still be returned.
 
 sub lock {
     my ($self) = @_;
-    $$self->{locked} = 1;
+    $$self->{-locked} = 1;
     return $self;
 };
 
@@ -215,7 +218,7 @@ Remove the lock set by C<lock>.
 
 sub unlock {
     my $self = shift;
-    delete $$self->{locked};
+    delete $$self->{-locked};
     return $self;
 };
 
@@ -229,7 +232,7 @@ No cleanup is called whatsoever, but it may be added in the future.
 
 sub clean_cache {
     my $self = shift;
-    delete $$self->{rw_cache};
+    delete $$self->{-cache};
     return $self;
 };
 
@@ -268,12 +271,12 @@ sub set_cache {
     RES: for my $name (keys %resources) {
         my $toset = $resources{$name};
 
-        my $spec = $$self->{spec}->spec($name);
+        my $spec = $$self->{-spec}->spec($name);
         croak "Attempt to set unknown resource '$name'"
             unless $spec;
 
         if (!defined $toset) {
-            delete $$self->{rw_cache}{$name};
+            delete $$self->{-cache}{$name};
             next RES;
         } elsif (ref $toset eq 'ARRAY') {
             unshift @$toset, '' if scalar @$toset == 1;
@@ -288,7 +291,7 @@ sub set_cache {
         for (keys %$toset) {
             croak "Attempt to set illegal argument '$_' for resource '$name'"
                 unless $spec->{argument}->( $_ );
-            $$self->{rw_cache}{$name}{$_} = $toset->{$_};
+            $$self->{-cache}{$name}{$_} = $toset->{$_};
         }
     };
 
@@ -304,7 +307,7 @@ Return a cached resource instance without initializing
 
 sub cached {
     my ($self, $name, $arg) = @_;
-    return $$self->{rw_cache}{$name}{$arg // ''};
+    return $$self->{-cache}{$name}{$arg // ''};
 };
 
 
@@ -322,7 +325,7 @@ sub preload {
     # TODO allow specifying resources to load
     #      but first come up with a way of specifying arguments, too.
 
-    my $list = $$self->{spec}->{preload};
+    my $list = $$self->{-spec}->{preload};
     for my $name (@$list) {
         my $unused = $$self->$name;
     };
@@ -345,7 +348,7 @@ architectural problem.
 =cut
 
 sub fresh {
-    return ${+shift}->_instantiate(@_);
+    return ${+shift}->_instantiate_resource(@_);
 };
 
 1;
