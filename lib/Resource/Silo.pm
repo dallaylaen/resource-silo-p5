@@ -206,6 +206,7 @@ If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
 
 use Carp;
 use Exporter;
+use Scalar::Util qw( set_prototype );
 
 use Resource::Silo::Spec;
 use Resource::Silo::Instance;
@@ -239,19 +240,19 @@ sub import {
     my $spec = Resource::Silo::Spec->new($target);
 
     my $instance;
-    my $silo = sub {
+    my $silo = set_prototype {
         unless (defined $instance) {
             $instance = $target->new;
             push @todestroy, $instance;
         };
         return $instance;
-    };
+    } '';
 
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
 
     push @{"${target}::ISA"}, 'Resource::Silo::Instance';
-    *{"${target}::metadata"} = sub { $spec };
+    *{"${target}::metadata"} = set_prototype { $spec } '';
 
     push @{"${caller}::ISA"}, 'Exporter';
     push @{"${caller}::EXPORT"}, qw(silo);
