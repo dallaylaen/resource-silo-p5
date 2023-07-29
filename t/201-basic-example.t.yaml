@@ -1,7 +1,0 @@
----
-  dbh:
-    driver: SQLite
-    database: ":memory:"
-    username: ''
-    password: ''
-  foo: 42
