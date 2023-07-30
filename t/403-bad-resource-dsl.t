@@ -32,6 +32,10 @@ do {
     } qr(^resource: .*identifier), 'names must be identifiers';
 
     throws_ok {
+        resource 'identifier_foolowed_by_$', sub { };
+    } qr(^resource: .*identifier), 'names must be identifiers';
+
+    throws_ok {
         resource new => sub { };
     } qr(^resource: .*replace.*method), 'known method = no go';
     my $where = __FILE__." line ".(__LINE__-2);
@@ -57,6 +61,21 @@ do {
     throws_ok {
         resource with_param => argument => 42, sub { };
     } qr(^resource: .*argument.*regex), 'wrong argument spec';
+
+    throws_ok {
+        resource bad_order => cleanup_delay => 'never', sub { };
+    } qr(^resource: .*cleanup_delay.*number), 'wrong cleanup order spec';
+
+    throws_ok {
+        resource bad_cleanup => cleanup => {}, sub { };
+    } qr(^resource: .*\bcleanup\b.*function), 'wrong cleanup method spec';
+
+    throws_ok {
+        resource cleanup_wo_cache =>
+            cleanup                 => sub {},
+            ignore_cache            => 1,
+            init                    => sub {};
+    } qr(^resource:.* cleanup .* ignore_cache), 'cleanup incompatible with nocache';
 
     done_testing;
 }
