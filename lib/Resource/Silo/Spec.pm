@@ -80,16 +80,15 @@ sub add {
         croak "resource: argument must be a regexp or function";
     }
 
-    if (defined $spec{cleanup} || $spec{cleanup_delay}) {
-        $spec{cleanup} //= sub {}; # in case we want just delay
-        $spec{cleanup_delay} //= 0;
+    $spec{cleanup_delay} //= 0;
+    croak "resource: cleanup_delay must be a number"
+        unless looks_like_number($spec{cleanup_delay});
+
+    if (defined $spec{cleanup}) {
         croak "resource: cleanup must be a function"
             unless reftype $spec{cleanup} eq 'CODE';
-        croak "resource: cleanup_delay must be a number"
-            unless looks_like_number($spec{cleanup_delay});
         croak "resource: cleanup is useless while ignore_cache is in use"
             if $spec{ignore_cache};
-        $spec{cleanup} = [ $name, $spec{cleanup_dealy}, $spec{cleanup} ];
     }
 
     if ($spec{preload}) {

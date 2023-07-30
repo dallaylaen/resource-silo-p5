@@ -88,9 +88,6 @@ sub _instantiate_resource {
         croak "Circular dependency detected for resource $key: {$loop}";
     };
     local $self->{-pending}{$key} = 1;
-    if ($spec->{cleanup}) {
-        $self->{-tocleanup}{$name} //= $spec->{cleanup};
-    };
 
     ($self->{-override}{$name} || $spec->{init})->($self, $name, $arg);
 };
@@ -99,10 +96,9 @@ sub _instantiate_resource {
 sub _cleanup_resource {
     my ($self, $name) = @_;
 
-    if (!$self->{-override}{$name} and $self->{-tocleanup}{$name}) {
-        my $action = delete $self->{-tocleanup}{$name};
+    if (!$self->{-override}{$name} and my $action = $self->{-spec}{$name}{cleanup}) {
         foreach my $specimen( values %{ $self->{-cache}{$name} } ) {
-            $action->[2]->($specimen);
+            $action->($specimen);
         };
     };
 
@@ -203,10 +199,14 @@ sub override {
         croak "Attempt to override unknown resource $name"
             unless $$self->{-spec}->spec($name);
         my $init = $subst{$name};
+
+        # Finalize existing values in cache, just in case
+        # BEFORE setting up override
+        $$self->_cleanup_resource($name);
+
         $$self->{-override}{$name} = (reftype $init // '') eq 'CODE'
             ? $init
             : sub { $init };
-        $$self->_cleanup_resource($name);
     };
 
     return $self;
@@ -365,16 +365,14 @@ Typically only useful for destruction.
 sub cleanup {
     my $self = ${ $_[0] };
     $self->{-cleanup} = 1; # This is stronger than lock.
-    my @order = sort {
-        $a->[1] <=> $b->[1];
-    } values %{ $self->{-tocleanup} };
 
-    foreach my $item (@order) {
-        my ($name, undef, $action) = @$item;
-        foreach my $res (values %{ $self->{-cache}{$name} }) {
-            $action->($res);
-        };
-        delete $self->{-cache}{$name};
+    my $spec = $self->{-spec};
+    my @order = sort {
+        $spec->{$a}{cleanup_delay} <=> $spec->{$b}{cleanup_delay};
+    } keys %{ $self->{-cache} };
+
+    foreach my $name (@order) {
+        $self->_cleanup_resource($name);
     };
 
     delete $self->{-cache};
