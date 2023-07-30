@@ -25,6 +25,8 @@ as well as a doorway into a fine-grained control interface.
 use Carp;
 use Scalar::Util qw( blessed reftype weaken );
 
+my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
+
 =head2 new( resource => $override, ... )
 
 Create a new container (also available as C<silo-E<gt>new>).
@@ -58,6 +60,10 @@ sub DESTROY {
 # This is what a silo->resource_name calls after checking the cache.
 sub _instantiate_resource {
     my ($self, $name, $arg) = @_;
+
+    croak "Illegal resource name '$name'"
+        unless $name =~ $ID_REX;
+
     my $spec = $self->{-spec}->spec($name);
     $arg //= '';
 
@@ -340,7 +346,7 @@ sub preload {
     # TODO allow specifying resources to load
     #      but first come up with a way of specifying arguments, too.
 
-    my $list = $$self->{-spec}->{preload};
+    my $list = $$self->{-spec}{-preload};
     for my $name (@$list) {
         my $unused = $$self->$name;
     };

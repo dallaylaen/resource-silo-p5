@@ -14,6 +14,8 @@ Resource::Silo::Spec - description of known resource types for L<Resource::Silo>
 use Carp;
 use Scalar::Util qw( looks_like_number reftype );
 
+my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
+
 =head2 new( $target )
 
 $target is the name of the module where resource access methods will be created.
@@ -23,8 +25,8 @@ $target is the name of the module where resource access methods will be created.
 sub new {
     my ($class, $target) = @_;
     return bless {
-        target  => $target,
-        preload => [],
+        -target  => $target,
+        -preload => [],
     }, $class;
 };
 
@@ -51,10 +53,10 @@ sub add {
         unshift @_, init => $init;
     }
     my (%spec) = @_;
-    my $target = $self->{target};
+    my $target = $self->{-target};
 
     croak "resource: name must be an identifier"
-        unless defined $name and !ref $name and $name =~ /^[a-z][a-z_0-9]*/i;
+        unless defined $name and !ref $name and $name =~ $ID_REX;
     croak "resource: attempt to redefine resource '$name'"
         if $self->spec($name);
     croak "resource: attempt to replace existing method in $target"
@@ -91,10 +93,10 @@ sub add {
     }
 
     if ($spec{preload}) {
-        push @{ $self->{preload} }, $name;
+        push @{ $self->{-preload} }, $name;
     };
 
-    $self->{spec}{$name} = \%spec;
+    $self->{$name} = \%spec;
 
     # Move code generation into Resource::Silo::Instance
     # so that exceptions via croak() are attributed correctly.
@@ -116,7 +118,9 @@ Fetch specifications for given resource.
 # TODO name!!!
 sub spec {
     my ($self, $name) = @_;
-    return $self->{spec}{$name};
+    croak "Illegal resource name '$name'"
+        unless $name =~ $ID_REX;
+    return $self->{$name};
 };
 
 =head2 generate_dsl
