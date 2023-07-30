@@ -212,21 +212,6 @@ sub override {
     return $self;
 }
 
-=head2 clear_overrides
-
-Remove all overrides set by C<override> call(s).
-
-=cut
-
-sub clear_overrides {
-    my $self = shift;
-    # Not calling cleanup for overrides!
-    delete $$self->{-cache}{$_}
-        for keys %{ $$self->{-override} };
-    delete $$self->{-override};
-    return $self;
-};
-
 =head2 lock
 
 Forbid initializing new resources.
@@ -318,19 +303,6 @@ sub set_cache {
 
     return $self;
 }
-
-=head2 cached( $resource_name, [$argument] )
-
-Return a cached resource instance without initializing
-(or C<undef> if the resource was never initialized).
-
-=cut
-
-sub cached {
-    my ($self, $name, $arg) = @_;
-    return $$self->{-cache}{$name}{$arg // ''};
-};
-
 
 =head2 preload()
 

@@ -36,13 +36,4 @@ throws_ok {
 } qr(initialize.*locked mode), 'loading config is prohibited';
 like $@, qr('config'), 'we tried to load config, max_users was ok';
 
-silo->ctl->unlock->clear_overrides;
-lives_and {
-    is silo->max_users, 42, 'can instantiate after unlock';
-};
-
-lives_and {
-    is silo->redis(6), 'localhost:6', 'overrides are active no more';
-};
-
 done_testing;

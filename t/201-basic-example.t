@@ -64,7 +64,6 @@ subtest 'imports & instantiation' => sub {
     can_ok 'main', 'silo';
     is ref silo(), 'My::Res', 'silo is of correct package';
     isa_ok silo(), 'Resource::Silo::Instance';
-    is silo->ctl->cached('dbh'), undef, 'cache is empty';
     is_deeply \%effect, {}, 'No resources loaded so far';
 };
 
@@ -72,8 +71,7 @@ subtest 'load by dependencies' => sub {
     my $dbh = silo->dbh;
     is ref $dbh, 'My::Database', 'can connect to "database"';
     is $dbh->id, 1, 'corrent db connection id';
-    my $cached = silo->ctl->cached('dbh');
-    is "$cached", "$dbh", 'querying cache is ok';
+    is silo->dbh->id, 1, "connection was cached";
     is_deeply \%effect, { config => 1, database => { myuser => 1 } },
         "both config and database were loaded";
 };
