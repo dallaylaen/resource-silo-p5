@@ -71,7 +71,7 @@ sub _instantiate_resource {
         unless $spec;
     croak "Argument for resource '$name' must be a scalar"
         if ref $arg;
-    croak "Argument check failed for resource '$name': '$arg'"
+    croak "Illegal argument for resource '$name': '$arg'"
         unless $spec->{argument}->($arg);
 
     croak "Attempting to initialize resource in destructor"
@@ -94,15 +94,23 @@ sub _instantiate_resource {
 
 # use instead of delete $self->{-cache}{$name}
 sub _cleanup_resource {
-    my ($self, $name) = @_;
+    my ($self, $name, @list) = @_;
 
-    if (!$self->{-override}{$name} and my $action = $self->{-spec}{$name}{cleanup}) {
-        foreach my $specimen( values %{ $self->{-cache}{$name} } ) {
-            $action->($specimen);
-        };
+    # TODO Do we need to validate arguments here?
+    my $action = $self->{-override}{$name}
+        ? undef
+        : $self->{-spec}{$name}{cleanup};
+    my $known = $self->{-cache}{$name};
+
+    @list = keys %$known
+        unless @list;
+
+    foreach my $arg (@list) {
+        $arg //= '';
+        next unless defined $known->{$arg};
+        $action->($known->{$arg}) if $action;
+        delete $known->{$arg};
     };
-
-    delete $self->{-cache}{$name};
 };
 
 # We must create resource accessors in this package
@@ -241,65 +249,44 @@ sub unlock {
 
 =head2 set_cache
 
-Set or delete a resource in the cache.
+Set or delete a resource instance in the cache.
 
 =over
 
-=item * set_cache( resource_name => [ $instance ], ... )
+=item * $container->ctl->set_cache( $name => $value );
 
-Set a resource without argument.
+=item * $container->ctl->set_cache( $name => C<undef> );
 
-=item * set_cache( resource_name => [ argument => $instance, ... ], ... )
+=item * $container->ctl->set_cache( $name => $argument => $value );
 
-Set resource with arguments. Note that the argument checks will still be applied.
-
-=item * set_cache( resource_name => { argument => $instance, ... }, ... )
-
-Ditto.
-
-=item * set_cache( resource_name => undefined, ... )
-
-Clear cache for given resource(s), regardless of arguments.
+=item * $container->ctl->set_cache( $name => $argument => C<undef> );
 
 =back
-
-Note that C<set_cache( resource_name =E<gt> $instance )> is invalid
-as it may not be possible to distinguish it from one of the above forms.
 
 =cut
 
 sub set_cache {
-    my ($self, %resources) = @_;
+    my $self = ${ +shift };
 
-    croak "attempt to update cache in destruction phase"
-        if $$self->{-cleanup};
+    croak "set_cache accepts 2 or 3 arguments"
+        unless 2 <= @_ and @_ <= 3;
+    croak "attempt to modify cache in cleanup phase"
+        if $self->{-cleanup};
 
-    RES: for my $name (keys %resources) {
-        my $toset = $resources{$name};
+    my $name  = shift;
+    my $value = pop;
+    my $arg   = shift // '';
 
-        my $spec = $$self->{-spec}->spec($name);
-        croak "Attempt to set unknown resource '$name'"
-            unless $spec;
+    croak "Illegal resource name '$name'"
+        unless $name =~ $ID_REX;
+    my $spec = $self->{-spec}{$name};
+    croak "Unknown resource '$name'"
+        unless $spec;
+    croak "Illegal argument for resource '$name': '$arg'"
+        unless $spec->{argument}->($arg);
 
-        if (!defined $toset) {
-            delete $$self->{-cache}{$name};
-            next RES;
-        } elsif (ref $toset eq 'ARRAY') {
-            unshift @$toset, '' if scalar @$toset == 1;
-            $toset = { @$toset };
-        } elsif (ref $toset eq 'HASH') {
-            # do nothing
-        } else {
-            croak "set_cache value must be undef, an array, or a hash, not "
-                .(ref $toset || "a scalar value '$toset'");
-        };
-
-        for (keys %$toset) {
-            croak "Attempt to set illegal argument '$_' for resource '$name'"
-                unless $spec->{argument}->( $_ );
-            $$self->{-cache}{$name}{$_} = $toset->{$_};
-        }
-    };
+    $self->_cleanup_resource($name, $arg);
+    $self->{-cache}{$name}{$arg} = $value;
 
     return $self;
 }

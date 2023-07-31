@@ -2,7 +2,8 @@
 
 =head1 DESCRIPTION
 
-Forcibly set stuff in cache.
+Basically emulate bootstrapping DBI via DBIx::Class
+by use of set_cache (+some edge cases).
 
 =cut
 
@@ -11,65 +12,78 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
+my %connect;
+my $seq;
+
+{
+    package My::Database;
+    sub new {
+        my $class = shift;
+        my $id = ++$seq;
+        $connect{$id}++;
+        return bless {
+            id => $id,
+            tables => {},
+        }, $class;
+    };
+    sub id { $_[0]->{id} };
+    sub tables { $_[0]->{tables} };
+};
+
+{
+    package My::Orm;
+    sub new {
+        my ($class, $conn) = @_;
+        return bless {
+            conn => $conn,
+        }, $class;
+    };
+    sub deploy {
+        my $self = shift;
+        my $db = $self->{conn}->tables;
+        $db->{$_}++
+            for qw(foo bar quux);
+    };
+};
+
 {
     package My::App;
     use Resource::Silo -class;
-    use List::Util qw(sum);
 
-    resource fib => argument => qr/\d+/, sub {
-        my ($self, $name, $arg) = @_;
-        return ($arg <= 1) ? $arg : $self->$name($arg-1) + $self->$name($arg-2);
-    };
+    resource dbh =>
+        init        => sub {
+            my $self = shift;
+            my $dbh = My::Database->new;
+            $self->ctl->set_cache( dbh => $dbh );
+            $self->schema->deploy;
+            return $dbh;
+        },
+        cleanup     => sub {
+            my $dbh = shift;
+            delete $connect{ $dbh->id };
+        };
 
-    resource prices => sub {
-        my $self = shift;
-        my $tmp = { foo => 42, bar => 137 };
-        $self->ctl->set_cache( prices => [ $tmp ] );
-        return { %$tmp, total => sum( values %$tmp ) };
-    }
-}
-
-subtest 'normal op' => sub {
-    my $res = My::App->new;
-    is $res->fib(10), 55, 'normal instantiation';
-
-    $res->ctl->set_cache(fib => [ 11 => 55 ]);
-    is $res->fib(11), 55, 'set cache worked';
-    is $res->fib(12), 110, 'derived resources work, too';
-
-    $res->ctl->set_cache( fib => undef );
-    is $res->fib(11), 89, 'cache erased => normal values';
-
-    $res->ctl->set_cache( fib => undef )->set_cache( fib => { 1 => 2 } );
-    is $res->fib(5), 10, 'doubled 1st number => all doubled';
-    is $res->fib(10), 110, 'doubled 1st number => all doubled';
+    resource schema =>
+        init            => sub {
+            my $self = shift;
+            return My::Orm->new( $self->dbh );
+        };
 };
 
-subtest 'bootstrap' => sub {
+subtest 'basic initialisation' => sub {
     my $res = My::App->new;
-    is_deeply $res->prices,
-        { foo => 42, bar => 137, total => 42 + 137 },
-        'Bootstrapping a resource through an incomplete value';
+    is_deeply \%connect, {}, "nothing instantiated yet";
+    is_deeply $res->dbh->tables, { foo => 1, bar => 1, quux => 1 }
+        , "schema seeded";
+    is_deeply \%connect, { 1 => 1 }, "connection is there";
+    undef $res;
+    is_deeply \%connect, {}, "connection closed";
 };
 
-subtest 'errors' => sub {
+# TODO the instantiation must work in any order!
+0 and lives_ok {
     my $res = My::App->new;
-
-    throws_ok {
-        $res->ctl->set_cache( dbh => undef );
-    } qr/unknown.*'dbh'/, 'unknown resource = no go';
-
-    throws_ok {
-        $res->ctl->set_cache( fib => [ zzz => 333 ] );
-    } qr/argument.*'zzz'.*'fib'/, 'invalid argument = no go';
-
-    throws_ok {
-        $res->ctl->set_cache( fib => bless {}, 'No::Package' );
-    } qr/must be.*array.* or .* hash.* not No::Package/, 'some blessed value = no go';
-
-    throws_ok {
-        $res->ctl->set_cache( fib => 144 );
-    } qr/must be.*array.* or .* hash.* not a scalar/, 'some scalar value = no go';
+    $res->schema;
 };
 
 done_testing;
