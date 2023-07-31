@@ -189,14 +189,27 @@ package
 use Carp;
 use Scalar::Util qw( reftype );
 
-=head2 override( name => sub { ... }, ... )
+=head2 override( %substitutes )
 
 Provide a set of overrides for some of the resources.
 
 This can be used e.g. in tests to mock certain external facilities.
 
-If provided value is not a subroutine reference, it will be coerced into
-a constant one returning the given value: C<name =E<gt> sub { $value };>
+%substitutes values are interpreted as follows:
+
+=over
+
+=item * C<sub { ... }> - use this code instead of the resource's C<init>;
+
+=item * C<undef> - erase the override for given resource;
+
+=item * anything else is coerced into an initializer:
+$value => sub { return $value }.
+
+=back
+
+Setting overrides has the side effect of clearing cache
+for the affected resources.
 
 =cut
 
@@ -204,17 +217,23 @@ sub override {
     my ($self, %subst) = @_;
 
     foreach my $name (keys %subst) {
+        croak "Illegal resource name '$name'"
+            unless $name =~ $ID_REX;
         croak "Attempt to override unknown resource $name"
-            unless $$self->{-spec}->spec($name);
+            unless $$self->{-spec}{$name};
         my $init = $subst{$name};
 
         # Finalize existing values in cache, just in case
         # BEFORE setting up override
         $$self->_cleanup_resource($name);
 
-        $$self->{-override}{$name} = (reftype $init // '') eq 'CODE'
-            ? $init
-            : sub { $init };
+        if (defined $init) {
+            $$self->{-override}{$name} = (reftype $init // '') eq 'CODE'
+                ? $init
+                : sub { $init };
+        } else {
+            delete $$self->{-override}{$name};
+        };
     };
 
     return $self;
@@ -246,50 +265,6 @@ sub unlock {
     delete $$self->{-locked};
     return $self;
 };
-
-=head2 set_cache
-
-Set or delete a resource instance in the cache.
-
-=over
-
-=item * $container->ctl->set_cache( $name => $value );
-
-=item * $container->ctl->set_cache( $name => C<undef> );
-
-=item * $container->ctl->set_cache( $name => $argument => $value );
-
-=item * $container->ctl->set_cache( $name => $argument => C<undef> );
-
-=back
-
-=cut
-
-sub set_cache {
-    my $self = ${ +shift };
-
-    croak "set_cache accepts 2 or 3 arguments"
-        unless 2 <= @_ and @_ <= 3;
-    croak "attempt to modify cache in cleanup phase"
-        if $self->{-cleanup};
-
-    my $name  = shift;
-    my $value = pop;
-    my $arg   = shift // '';
-
-    croak "Illegal resource name '$name'"
-        unless $name =~ $ID_REX;
-    my $spec = $self->{-spec}{$name};
-    croak "Unknown resource '$name'"
-        unless $spec;
-    croak "Illegal argument for resource '$name': '$arg'"
-        unless $spec->{argument}->($arg);
-
-    $self->_cleanup_resource($name, $arg);
-    $self->{-cache}{$name}{$arg} = $value;
-
-    return $self;
-}
 
 =head2 preload()
 
