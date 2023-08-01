@@ -119,7 +119,7 @@ the following things happen:
 
 =over
 
-=item * L<Resource::Silo::Instance> and L<Exporter> are added to C<@ISA>;
+=item * L<Resource::Silo::Container> and L<Exporter> are added to C<@ISA>;
 
 =item * C<silo> function is added to C<@EXPORT> and thus becomes re-exported
 by default;
@@ -198,7 +198,7 @@ See L<Resource::Silo::Control/lock>.
 =item * ignore_cache => 1 | 0
 
 If set, don't cache resource, always create a fresh one instead.
-See also L<Resource::Silo::Instance/fresh>.
+See also L<Resource::Silo::Container/fresh>.
 
 =item * preload => 1 | 0
 
@@ -215,7 +215,7 @@ use Exporter;
 use Scalar::Util qw( set_prototype );
 
 use Resource::Silo::Spec;
-use Resource::Silo::Instance;
+use Resource::Silo::Container;
 
 # Must enforce correctly freeing the resources, closing connections etc
 # before program ends.
@@ -257,7 +257,7 @@ sub import {
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
 
-    push @{"${target}::ISA"}, 'Resource::Silo::Instance';
+    push @{"${target}::ISA"}, 'Resource::Silo::Container';
     *{"${target}::metadata"} = set_prototype { $spec } '';
 
     push @{"${caller}::ISA"}, 'Exporter';
@@ -306,7 +306,7 @@ Here is an example:
 
 =head1 CAVEATS AND CONSIDERATIONS
 
-See L<Resource::Silo::Instance> for resource container implementation.
+See L<Resource::Silo::Container> for resource container implementation.
 As of current, it is probably a bad idea to use L<Moose> on the same class
 as L<Resource::Silo>.
 

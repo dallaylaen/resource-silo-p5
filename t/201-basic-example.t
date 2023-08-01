@@ -63,7 +63,7 @@ use My::Res;
 subtest 'imports & instantiation' => sub {
     can_ok 'main', 'silo';
     is ref silo(), 'My::Res', 'silo is of correct package';
-    isa_ok silo(), 'Resource::Silo::Instance';
+    isa_ok silo(), 'Resource::Silo::Container';
     is_deeply \%effect, {}, 'No resources loaded so far';
 };
 

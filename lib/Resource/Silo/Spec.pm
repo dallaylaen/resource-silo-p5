@@ -97,12 +97,12 @@ sub add {
 
     $self->{$name} = \%spec;
 
-    # Move code generation into Resource::Silo::Instance
+    # Move code generation into Resource::Silo::Container
     # so that exceptions via croak() are attributed correctly.
     {
         no strict 'refs'; ## no critic Strictures
         *{"${target}::$name"} =
-            Resource::Silo::Instance::_make_resource_accessor($name, \%spec);
+            Resource::Silo::Container::_make_resource_accessor($name, \%spec);
     }
 
     return $self;
