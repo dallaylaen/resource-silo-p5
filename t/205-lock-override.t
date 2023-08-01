@@ -36,4 +36,9 @@ throws_ok {
 } qr(initialize.*locked mode), 'loading config is prohibited';
 like $@, qr('config'), 'we tried to load config, max_users was ok';
 
+silo->ctl->unlock;
+lives_and {
+    is silo->max_users, 42, "unoverridden resource instantiated after unlock";
+};
+
 done_testing;
