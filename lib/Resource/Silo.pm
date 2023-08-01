@@ -193,7 +193,7 @@ relative to the underlying L<DBI> handle.
 
 B<EFFECT:> This will allow initializing resource,
 even when the resource container is put into locked mode.
-See L<Resource::Silo::Control/lock>.
+See L<Resource::Silo::Container/lock>.
 
 =item * ignore_cache => 1 | 0
 
@@ -279,7 +279,7 @@ Thus, L<Resource::Silo> provides a mechanism to substitute a subset of resources
 with mocks and forbid the instantiation of the rest, thereby guarding against
 unwanted side-effects.
 
-The C<lock>/C<unlock> methods in L<Resource::Silo::Control>,
+The C<lock>/C<unlock> methods in L<Resource::Silo::Container>,
 available via C<silo-E<gt>ctl> frontend,
 temporarily forbid instantiating new resources.
 The resources already in cache will still be OK though.

@@ -173,7 +173,7 @@ Use it and discard immediately.
 
 sub ctl {
     my $self = shift;
-    my $facade = bless \$self, 'Resource::Silo::Control';
+    my $facade = bless \$self, 'Resource::Silo::Container::Dashboard';
     weaken $$facade;
     confess "Attempt to close over nonexistent value"
         unless $$facade;
@@ -184,7 +184,7 @@ sub ctl {
 # 1) it must have access to the internals anyway and
 # 2) we want to keep the documentation close to the implementation.
 package
-    Resource::Silo::Control;
+    Resource::Silo::Container::Dashboard;
 
 use Carp;
 use Scalar::Util qw( reftype );
