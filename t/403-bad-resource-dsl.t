@@ -63,8 +63,8 @@ do {
     } qr(^resource: .*argument.*regex), 'wrong argument spec';
 
     throws_ok {
-        resource bad_order => cleanup_delay => 'never', sub { };
-    } qr(^resource: .*cleanup_delay.*number), 'wrong cleanup order spec';
+        resource bad_order => cleanup_order => 'never', sub { };
+    } qr(^resource: .*cleanup_order.*number), 'wrong cleanup order spec';
 
     throws_ok {
         resource bad_cleanup => cleanup => {}, sub { };

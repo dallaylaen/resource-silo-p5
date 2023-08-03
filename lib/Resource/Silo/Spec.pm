@@ -40,7 +40,7 @@ my %known_args = (
     argument        => 1,
     assume_pure     => 1,
     cleanup         => 1,
-    cleanup_delay   => 1,
+    cleanup_order   => 1,
     ignore_cache    => 1,
     init            => 1,
     preload         => 1,
@@ -80,9 +80,9 @@ sub add {
         croak "resource: argument must be a regexp or function";
     }
 
-    $spec{cleanup_delay} //= 0;
-    croak "resource: cleanup_delay must be a number"
-        unless looks_like_number($spec{cleanup_delay});
+    $spec{cleanup_order} //= 0;
+    croak "resource: cleanup_order must be a number"
+        unless looks_like_number($spec{cleanup_order});
 
     if (defined $spec{cleanup}) {
         croak "resource: cleanup must be a function"

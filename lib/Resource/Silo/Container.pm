@@ -302,7 +302,7 @@ sub cleanup {
 
     my $spec = $self->{-spec};
     my @order = sort {
-        $spec->{$a}{cleanup_delay} <=> $spec->{$b}{cleanup_delay};
+        $spec->{$a}{cleanup_order} <=> $spec->{$b}{cleanup_order};
     } keys %{ $self->{-cache} };
 
     foreach my $name (@order) {

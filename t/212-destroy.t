@@ -55,7 +55,7 @@ my @order;
     use Resource::Silo -class;
 
     resource main  =>
-        cleanup_delay   => -1,
+        cleanup_order   => -1,
         init            => sub {
             $_[0]->$_
                 for (qw(logger dbh huey louie dewey));
@@ -68,10 +68,10 @@ my @order;
     resource dewey =>
         init            => sub { My::Res->new( $_[1] ) };
     resource dbh =>
-        cleanup_delay   => 1,
+        cleanup_order   => 1,
         init            => sub { My::Res->new( $_[1] ) };
     resource logger =>
-        cleanup_delay   => 100,
+        cleanup_order   => 100,
         init            => sub { My::Res->new( $_[1] ) };
 };
 
