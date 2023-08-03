@@ -41,6 +41,7 @@ my %known_args = (
     assume_pure     => 1,
     cleanup         => 1,
     cleanup_order   => 1,
+    fork_cleanup    => 1,
     ignore_cache    => 1,
     init            => 1,
     preload         => 1,
@@ -84,12 +85,17 @@ sub add {
     croak "resource: cleanup_order must be a number"
         unless looks_like_number($spec{cleanup_order});
 
-    if (defined $spec{cleanup}) {
-        croak "resource: cleanup must be a function"
-            unless reftype $spec{cleanup} eq 'CODE';
-        croak "resource: cleanup is useless while ignore_cache is in use"
-            if $spec{ignore_cache};
-    }
+    croak "resource: cleanup is useless while ignore_cache is in use"
+        if $spec{ignore_cache} and (
+            defined $spec{cleanup}
+            or defined $spec{fork_cleanup}
+            or $spec{cleanup_order} != 0
+        );
+
+    croak "resource: cleanup must be a function"
+        if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne 'CODE';
+    croak "resource: fork_cleanup must be a function"
+        if defined $spec{fork_cleanup} and (reftype $spec{fork_cleanup} // '') ne 'CODE';
 
     if ($spec{preload}) {
         push @{ $self->{-preload} }, $name;

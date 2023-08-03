@@ -95,11 +95,16 @@ sub _instantiate_resource {
 # use instead of delete $self->{-cache}{$name}
 sub _cleanup_resource {
     my ($self, $name, @list) = @_;
-
     # TODO Do we need to validate arguments here?
-    my $action = $self->{-override}{$name}
-        ? undef
-        : $self->{-spec}{$name}{cleanup};
+
+    my $action;
+    if (!$self->{-override}{$name}) {
+        # 1) skip resources that have overrides
+        # 2) if we're in "no pid" mode, use fork_cleanup if available
+        $action = $self->{-pid} != $$
+            && $self->{-spec}{$name}{fork_cleanup}
+            || $self->{-spec}{$name}{cleanup};
+    };
     my $known = $self->{-cache}{$name};
 
     @list = keys %$known
@@ -131,8 +136,7 @@ sub _make_resource_accessor {
 
         # If there was a fork, flush cache
         if ($self->{-pid} != $$) {
-            # TODO invent some post-fork cleanup - but not now
-            delete $self->{-cache};
+            $self->ctl->cleanup;
             $self->{-pid} = $$;
         };
 
@@ -298,7 +302,7 @@ Typically only useful for destruction.
 
 sub cleanup {
     my $self = ${ $_[0] };
-    $self->{-cleanup} = 1; # This is stronger than lock.
+    local $self->{-cleanup} = 1; # This is stronger than lock.
 
     my $spec = $self->{-spec};
     my @order = sort {

@@ -131,14 +131,12 @@ a static L<Resource::Silo::Spec> object is created;
 
 =back
 
-=head1 RESOURCE DEFINITION
+=head1 RESOURCE DECLARATION
 
 =head2 resource
 
     resource 'name' => sub { ... };
     resource 'name' => %options;
-
-Declare a resource.
 
 %options may include:
 
@@ -153,11 +151,17 @@ the last one is popped and considered to be the init function.
 
 =item * argument => C<sub { ... }> || C<qr( ... )>
 
-A sanity check on a string argument for the resource fetching function.
+If specified, assume that the resource in question may have several instances,
+distinguished by a string argument. Such argument will be passed as the 3rd
+parameter to the C<init> function.
 
-If specified, the argument must always be supplied, the regular expression
-must match I<the whole> string, and the function must return a true value.
-Otherwise an exception will be raised.
+This may be useful e.g. for L<DBIx::Class> result sets,
+or for L<Redis::Namespace>.
+
+A regular expression will always be anchored to match I<the whole string>.
+A function must return true for the parameter to be valid.
+
+If the argument is omitted, it is assumed to be an empty string.
 
 Example:
 
@@ -204,7 +208,35 @@ See also L<Resource::Silo::Container/fresh>.
 
 If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
 Useful if you want to throw errors when a service is starting,
-not during request request processing.
+not during request processing.
+
+=item * cleanup => sub { $resource_instance }
+
+Undo the init procedure.
+Usually it is assumed that the resource will do it by itself in the destructor,
+e.g. that's what a L<DBI> connection would do.
+However, if it's not the case, or resources refer circularly to one another,
+a manual "destructor" may be specified.
+
+It only accepts the resource itself as an argument and will be called before
+erasing the object from the cache.
+
+See also C<fork_cleanup>.
+
+=item * cleanup_order => $number
+
+The higher the number, the later the resource will get destroyed.
+
+The default is 0, negative numbers are also valid, if that makes sense for
+you application
+(e.g. destroy C<$my_service_main_object> before the resources it consumes).
+
+=item * fork_cleanup => sub { $resource_instance }
+
+Like C<cleanup>, but only in case a change in process ID was detected.
+See L</FORKING>
+
+This may be useful if cleanup is destructive and shouldn't be performed twice.
 
 =back
 
@@ -320,10 +352,10 @@ with the argument.
 If the process forks, resources such as database handles may become invalid
 or interfere with other processes' copies.
 As of current, if a change in the process ID is detected,
-the resource cache is erased altogether.
+the resource cache is reset altogether.
 
-This may changed in the future as some resources
-(e.g. configuration or endpoints) are stateless and don't require such checks.
+This may change in the future as some resources
+(e.g. configurations or endpoint URLs) are stateless and may be preserved.
 
 =head2 CIRCULAR DEPENDENCIES
 
