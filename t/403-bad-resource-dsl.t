@@ -32,7 +32,7 @@ do {
     } qr(^resource: .*identifier), 'names must be identifiers';
 
     throws_ok {
-        resource 'identifier_foolowed_by_$', sub { };
+        resource 'identifier_followed_by_$', sub { };
     } qr(^resource: .*identifier), 'names must be identifiers';
 
     throws_ok {
@@ -59,6 +59,10 @@ do {
     } qr(^resource: .*init), 'init missing = no go';
 
     throws_ok {
+        resource bad_init => [];
+    } qr(^resource: .*init), 'init of wrong type = no go';
+
+    throws_ok {
         resource with_param => argument => 42, sub { };
     } qr(^resource: .*argument.*regex), 'wrong argument spec';
 
@@ -71,8 +75,27 @@ do {
     } qr(^resource: .*\bcleanup\b.*function), 'wrong cleanup method spec';
 
     throws_ok {
+        resource bad_cleanup_2 => cleanup => "function", sub { };
+    } qr(^resource: .*\bcleanup\b.*function), 'wrong cleanup method spec';
+
+    throws_ok {
+        resource bad_f_cleanup => fork_cleanup => {}, sub { };
+    } qr(^resource: .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
+
+    throws_ok {
+        resource bad_f_cleanup_2 => fork_cleanup => "function", sub { };
+    } qr(^resource: .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
+
+    throws_ok {
         resource cleanup_wo_cache =>
             cleanup                 => sub {},
+            ignore_cache            => 1,
+            init                    => sub {};
+    } qr(^resource:.* cleanup .* ignore_cache), 'cleanup incompatible with nocache';
+
+    throws_ok {
+        resource cleanup_wo_cache_2 =>
+            fork_cleanup            => sub {},
             ignore_cache            => 1,
             init                    => sub {};
     } qr(^resource:.* cleanup .* ignore_cache), 'cleanup incompatible with nocache';

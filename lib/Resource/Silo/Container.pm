@@ -23,7 +23,7 @@ as well as a doorway into a fine-grained control interface.
 =cut
 
 use Carp;
-use Scalar::Util qw( blessed reftype weaken );
+use Scalar::Util qw( blessed refaddr reftype weaken );
 
 my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
 
@@ -39,6 +39,8 @@ L</override> method (see below).
 # NOTE to the editor. As we want to stay compatible with Moo/Moose,
 # please make sure all internal fields start with a hyphen ("-").
 
+my %active_instances;
+
 sub new {
     my $class = shift;
     $class = ref $class if blessed $class;
@@ -48,12 +50,29 @@ sub new {
     }, $class;
     $self->ctl->override( @_ )
         if @_;
+    $active_instances{ refaddr $self } = $self;
+    weaken $active_instances{ refaddr $self };
     return $self;
 };
 
 sub DESTROY {
     my $self = shift;
     $self->ctl->cleanup;
+    delete $active_instances{ refaddr $self };
+};
+
+# As container instances inside the silo() function will be available forever,
+# we MUST enforce freeing the resources before program ends
+END {
+    foreach my $container (values %active_instances) {
+        next unless $container;
+        eval {
+            $container->ctl->cleanup;
+        } || do {
+            warn "Deinitializing a Resource::Silo instance failed: $@";
+            delete $container->{-cache};
+        };
+    };
 };
 
 # Instantiate resource $name with argument $argument.
@@ -67,14 +86,14 @@ sub _instantiate_resource {
     my $spec = $self->{-spec}->spec($name);
     $arg //= '';
 
-    croak "Attempting to fetch nonexistent resource $name"
+    croak "Attempting to fetch nonexistent resource '$name'"
         unless $spec;
     croak "Argument for resource '$name' must be a scalar"
         if ref $arg;
     croak "Illegal argument for resource '$name': '$arg'"
         unless $spec->{argument}->($arg);
 
-    croak "Attempting to initialize resource in destructor"
+    croak "Attempting to initialize resource '$name' during cleanup"
         if $self->{-cleanup};
     croak "Attempting to initialize resource '$name' in locked mode"
         if $self->{-locked}
@@ -310,7 +329,16 @@ sub cleanup {
     } keys %{ $self->{-cache} };
 
     foreach my $name (@order) {
-        $self->_cleanup_resource($name);
+        eval {
+            # We cannot afford to die here as if we do
+            #    a resource that causes exceptions in cleanup
+            #    would be stuck in cache forever
+            $self->_cleanup_resource($name);
+            1;
+        } or do {
+            my $err = $@;
+            Carp::cluck "Failed to cleanup resource '$name', but trying to continue: $err";
+        };
     };
 
     delete $self->{-cache};

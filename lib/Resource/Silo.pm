@@ -249,15 +249,6 @@ use Scalar::Util qw( set_prototype );
 use Resource::Silo::Spec;
 use Resource::Silo::Container;
 
-# Must enforce correctly freeing the resources, closing connections etc
-# before program ends.
-my @todestroy;
-END {
-    foreach my $container (@todestroy) {
-        $container->ctl->cleanup;
-    };
-};
-
 sub import {
     my ($self, @param) = @_;
     my $caller = caller;
@@ -279,11 +270,9 @@ sub import {
 
     my $instance;
     my $silo = set_prototype {
-        unless (defined $instance) {
-            $instance = $target->new;
-            push @todestroy, $instance;
-        };
-        return $instance;
+        # cannot instantiate target until the package is fully defined,
+        # thus go lazy
+        $instance //= $target->new;
     } '';
 
     no strict 'refs'; ## no critic
