@@ -2,6 +2,7 @@ package Resource::Silo::Container;
 
 use strict;
 use warnings;
+our $VERSION = 0.001;
 
 =head1 NAME
 
@@ -360,5 +361,14 @@ architectural problem.
 sub fresh {
     return ${+shift}->_instantiate_resource(@_);
 };
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
+
+This software is free software.
+It is available on the same license terms as Perl itself.
+
+=cut
 
 1;

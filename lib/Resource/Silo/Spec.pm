@@ -2,6 +2,7 @@ package Resource::Silo::Spec;
 
 use strict;
 use warnings;
+our $VERSION = 0.001;
 
 =head1 NAME
 
@@ -139,5 +140,14 @@ sub generate_dsl {
     my $inst = shift;
     return sub { $inst->add(@_) };
 };
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
+
+This software is free software.
+It is available on the same license terms as Perl itself.
+
+=cut
 
 1;
