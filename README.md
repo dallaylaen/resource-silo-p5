@@ -38,16 +38,21 @@ Declaring a resource:
 ```perl
     package My::App;
     use Resource::Silo;
-    use DBI;
     use YAML::XS qw(LoadFile);
 
     resource config => sub { LoadFile( "/etc/myapp.yaml" ) };
     resource dbh    => sub {
+      require DBI;
       my $self = shift;
       my $conf = $self->config->{database};
       DBI->connect(
         $conf->{dbi}, $conf->{username}, $conf->{password}, { RaiseError => 1 }
       );
+    };
+    resource user_agent => sub {
+        require LWP::UserAgent;
+        LWP::UserAgent->new();
+        # set your custon UserAgent header or SSL certificate(s) here
     };
 ```
 
@@ -103,9 +108,10 @@ Using it in test files:
     silo->ctl->lock;
 
     my $stuff = My::App::Stuff->new();
-    $stuff->frobnicate( ... );          # will only affect the sqlite instance
-    my $conf = silo->config;            # oops! this dies because no override
-                                        # was supplied and lock is in action!
+    $stuff->frobnicate( ... );        # will only affect the sqlite instance
+
+    $stuff->ping_partner_api();       # oops! the user_agent resource wasn't
+                                      # overridden, so there'll be an exception
 ```
 
 Performing a Big Scary Update:
