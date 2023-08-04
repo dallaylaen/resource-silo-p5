@@ -1,10 +1,10 @@
+# Resource::Silo
+
+A lazy declarative resource managemement library for Perl.
+
 # DESCRIPTION
 
-Resource::Silo is a lazy declarative resource managemement library for Perl.
-
-What it offers:
-
-## Exported functions:
+## Syntax:
 
 * `resource` - a Moose-like prototyped function to declare resources
 inside a sealed container class;
@@ -30,6 +30,12 @@ the one and true container instance;
 * loading only the needed resources for fast startup time;
 * creating isolated one-off resource instances to perform invasive operations
 such as a big DB update within a transaction.
+
+## Overall:
+
+* built with simplicity and performance in mind;
+* robust and resilient to misuse;
+* terse, concise, and laconic.
 
 # USAGE
 
@@ -133,6 +139,11 @@ To install this module, run the following commands:
 	make
 	make test
 	make install
+
+# ACKNOWLEDGEMENTS
+
+The library was named after a building in the game
+*Heroes of Might and Magic III: The Restoration of Erathia*.
 
 # LICENSE AND COPYRIGHT
 
