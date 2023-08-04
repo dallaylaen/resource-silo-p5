@@ -242,7 +242,7 @@ sub override {
     foreach my $name (keys %subst) {
         croak "Illegal resource name '$name'"
             unless $name =~ $ID_REX;
-        croak "Attempt to override unknown resource $name"
+        croak "Attempt to override unknown resource '$name'"
             unless $$self->{-spec}{$name};
         my $init = $subst{$name};
 
