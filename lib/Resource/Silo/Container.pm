@@ -93,7 +93,7 @@ sub _instantiate_resource {
         if $self->{-cleanup};
     croak "Attempting to initialize resource '$name' in locked mode"
         if $self->{-locked}
-            and !$spec->{assume_pure}
+            and !$spec->{derivative}
             and !$self->{-override}{$name};
 
     # Detect circular dependencies
@@ -263,7 +263,7 @@ sub override {
 Forbid initializing new resources.
 
 The cached ones instantiated so far, the ones that have been overridden,
-and the ones with the C<assume_pure> flag will still be returned.
+and the ones with the C<derivative> flag will still be returned.
 
 =cut
 

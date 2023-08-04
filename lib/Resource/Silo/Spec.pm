@@ -39,7 +39,7 @@ Create resource type. See L<Resource::Silo/resource> for details.
 
 my %known_args = (
     argument        => 1,
-    assume_pure     => 1,
+    derivative      => 1,
     cleanup         => 1,
     cleanup_order   => 1,
     fork_cleanup    => 1,

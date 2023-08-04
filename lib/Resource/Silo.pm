@@ -186,17 +186,18 @@ Example:
             );
         };
 
-=item * assume_pure => 1 | 0
+=item * derivative => 1 | 0
 
-Assume that the resource introduces no new side effects
-relative to its dependencies.
-(Like in the above example with L<Redis::Namespace>).
+Assume that resource can be derived from its dependencies,
+or that it introduces no extra side effects compared to them.
 
-Or, for instance, a L<DBIx::Class> database schema is probably safe
-relative to the underlying L<DBI> handle.
+Examples may be L<Redis::Namespace> built on top of a L<Redis> handle
+or L<DBIx::Class> built on top of L<DBI> connection.
 
-B<EFFECT:> This will allow initializing resource,
-even when the resource container is put into locked mode.
+Derivative resources may be instantiated even in locked mode,
+as they would only initialize if their dependencies have already been
+initialized or overridden.
+
 See L<Resource::Silo::Container/lock>.
 
 =item * ignore_cache => 1 | 0
@@ -308,7 +309,7 @@ The resources already in cache will still be OK though.
 The C<override> method allows to supply substitutes for resources or
 their initializers.
 
-The C<assume_pure> flag in the resource definition may be used to indicate
+The C<derivative> flag in the resource definition may be used to indicate
 that a resource is safe to instantiate as long as its dependencies are
 either instantiated or mocked, e.g. a L<DBIx::Class> schema is probably fine
 as long as the underlying database connection is taken care of.

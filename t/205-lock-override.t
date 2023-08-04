@@ -16,11 +16,11 @@ use Resource::Silo;
 resource config     => sub { +{ redis => 'localhost', max_users => 42 } };
 resource redis_conn => sub { $_[0]->config->{redis} };
 resource max_users  =>
-    assume_pure         => 1,
+    derivative          => 1,
     init                => sub { $_[0]->config->{max_users} };
 resource redis      =>
     argument            => sub { 1 }, # anything goes
-    assume_pure         => 1,
+    derivative          => 1,
     init                => sub { return ($_[0]->redis_conn . ":$_[2]") };
 
 silo->ctl->lock->override(
