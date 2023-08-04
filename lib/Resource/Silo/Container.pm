@@ -57,8 +57,8 @@ sub new {
 
 sub DESTROY {
     my $self = shift;
-    $self->ctl->cleanup;
     delete $active_instances{ refaddr $self };
+    $self->ctl->cleanup;
 };
 
 # As container instances inside the silo() function will be available forever,
@@ -66,12 +66,7 @@ sub DESTROY {
 END {
     foreach my $container (values %active_instances) {
         next unless $container;
-        eval {
-            $container->ctl->cleanup;
-        } || do {
-            warn "Deinitializing a Resource::Silo instance failed: $@";
-            delete $container->{-cache};
-        };
+        $container->ctl->cleanup;
     };
 };
 
@@ -108,7 +103,7 @@ sub _instantiate_resource {
     };
     local $self->{-pending}{$key} = 1;
 
-    ($self->{-override}{$name} || $spec->{init})->($self, $name, $arg);
+    ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg);
 };
 
 # use instead of delete $self->{-cache}{$name}
@@ -322,6 +317,8 @@ Typically only useful for destruction.
 sub cleanup {
     my $self = ${ $_[0] };
     local $self->{-cleanup} = 1; # This is stronger than lock.
+
+    # NOTE Be careful! cleanup must never ever die!
 
     my $spec = $self->{-spec};
     my @order = sort {
