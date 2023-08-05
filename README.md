@@ -4,6 +4,10 @@ A lazy declarative resource managemement library for Perl.
 
 # DESCRIPTION
 
+Declare resources such as configuration files, database connections,
+external service endpoints, and so on, using a simple syntax,
+and manage their lifecycle.
+
 ## Syntax:
 
 * `resource` - a Moose-like prototyped function to declare resources
@@ -22,7 +26,7 @@ the one and true container instance;
 
 ## In test files:
 
-* overriding actual resources with mocks;
+* overriding actual resources with mocks/fixtures;
 * locking the container so that no unmocked resources can be acquired.
 
 ## In support scripts and tools:
