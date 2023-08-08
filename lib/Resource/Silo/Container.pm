@@ -41,13 +41,18 @@ L</override> method (see below).
 # please make sure all internal fields start with a hyphen ("-").
 
 my %active_instances;
+my $not_once = \%Resource::Silo::metadata; # avoid once warning
 
 sub new {
     my $class = shift;
     $class = ref $class if blessed $class;
+
+    my $spec = $Resource::Silo::metadata{$class}
+        or croak "Failed to locate \$Resource::Silo::metadata for class $class";
+
     my $self = bless {
         -pid  => $$,
-        -spec => $class->metadata,
+        -spec => $spec,
     }, $class;
     $self->ctl->override( @_ )
         if @_;

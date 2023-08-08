@@ -124,9 +124,6 @@ the following things happen:
 =item * C<silo> function is added to C<@EXPORT> and thus becomes re-exported
 by default;
 
-=item * a C<metadata> function/method returning
-a static L<Resource::Silo::Spec> object is created;
-
 =item * calling C<resource> creates a corresponding method in this package.
 
 =back
@@ -250,6 +247,9 @@ use Scalar::Util qw( set_prototype );
 use Resource::Silo::Spec;
 use Resource::Silo::Container;
 
+# Store definitions here
+our %metadata;
+
 sub import {
     my ($self, @param) = @_;
     my $caller = caller;
@@ -268,6 +268,7 @@ sub import {
     $target ||= __PACKAGE__."::container::".$caller;
 
     my $spec = Resource::Silo::Spec->new($target);
+    $metadata{$target} = $spec;
 
     my $instance;
     my $silo = set_prototype {
@@ -280,7 +281,6 @@ sub import {
     no warnings 'redefine', 'once'; ## no critic
 
     push @{"${target}::ISA"}, 'Resource::Silo::Container';
-    *{"${target}::metadata"} = set_prototype { $spec } '';
 
     push @{"${caller}::ISA"}, 'Exporter';
     push @{"${caller}::EXPORT"}, qw(silo);
