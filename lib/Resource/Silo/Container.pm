@@ -101,6 +101,10 @@ sub _instantiate_resource {
             and !$spec->{derivative}
             and !$self->{-override}{$name};
 
+    croak "Attempting to fetch unexpected dependency '$name'"
+        if ($self->{-allow} && !$self->{-allow}{$name});
+    local $self->{-allow} = $spec->{allowdeps};
+
     # Detect circular dependencies
     my $key = $name . (length $arg ? "\@$arg" : '');
     if ($self->{-pending}{$key}) {
@@ -159,6 +163,9 @@ sub _make_resource_accessor {
             $self->ctl->cleanup;
             $self->{-pid} = $$;
         };
+
+        croak "Attempting to fetch unexpected dependency '$name'"
+            if ($self->{-allow} && !$self->{-allow}{$name});
 
         # Stringify $arg ASAP, we'll validate it inside _instantiate_resource().
         # The cache entry for an invalid argument will never get populated.

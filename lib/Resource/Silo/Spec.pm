@@ -39,6 +39,7 @@ Create resource type. See L<Resource::Silo/resource> for details.
 
 my %known_args = (
     argument        => 1,
+    dependencies    => 1,
     derivative      => 1,
     cleanup         => 1,
     cleanup_order   => 1,
@@ -67,6 +68,16 @@ sub add {
     my @extra = grep { !$known_args{$_} } keys %spec;
     croak "resource: unknown arguments in specification: @extra"
         if @extra;
+
+    if (my $deps = delete $spec{dependencies}) {
+        croak "resource: dependencies must be an array"
+            unless ref $deps eq 'ARRAY';
+        my @bad = grep { !/$ID_REX/ } @$deps;
+        croak "resource: illegal dependency name(s): "
+            .join ", ", map { "'$_'" } @bad
+                if @bad;
+        $spec{allowdeps} = { map { $_ => 1 } @$deps };
+    };
 
     croak "resource: init must be a function"
         unless $spec{init} and reftype $spec{init} eq 'CODE';
