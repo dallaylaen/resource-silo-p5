@@ -33,7 +33,7 @@ for i in $FILES; do
 	echo "$i" | egrep -q '\.pm$' && CHECK_ONLY=''
 
   SYNTAX="$(perl -Mwarnings=FATAL,all -Mstrict -Ilib -Ilib/perl5 -w $CHECK_ONLY "$i" 2>&1)"
-  if [ ! -z "$SYNTAX" ]; then
+  if [ ! -z "$SYNTAX" ] && [ "$SYNTAX" != "$i syntax OK" ]; then
     echo >&2 "<syntax $i>\n$SYNTAX\n</syntax>"
     fail "$i" - Strict
   fi
