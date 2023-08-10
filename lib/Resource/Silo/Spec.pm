@@ -62,24 +62,24 @@ sub add {
         unless defined $name and !ref $name and $name =~ $ID_REX;
     croak "resource: attempt to redefine resource '$name'"
         if $self->spec($name);
-    croak "resource: attempt to replace existing method in $target"
+    croak "resource: attempt to replace existing method '$name' in $target"
         if $target->can($name);
 
     my @extra = grep { !$known_args{$_} } keys %spec;
-    croak "resource: unknown arguments in specification: @extra"
+    croak "resource '$name': unknown arguments in specification: @extra"
         if @extra;
 
     if (my $deps = delete $spec{dependencies}) {
-        croak "resource: dependencies must be an array"
+        croak "resource '$name': 'dependencies' must be an array"
             unless ref $deps eq 'ARRAY';
         my @bad = grep { !/$ID_REX/ } @$deps;
-        croak "resource: illegal dependency name(s): "
+        croak "resource '$name': illegal dependency name(s): "
             .join ", ", map { "'$_'" } @bad
                 if @bad;
         $spec{allowdeps} = { map { $_ => 1 } @$deps };
     };
 
-    croak "resource: init must be a function"
+    croak "resource '$name': 'init' must be a function"
         unless ref $spec{init} and reftype $spec{init} eq 'CODE';
 
     if (!defined $spec{argument}) {
@@ -90,23 +90,23 @@ sub add {
     } elsif ((reftype $spec{argument} // '') eq 'CODE') {
         # do nothing, we're fine
     } else {
-        croak "resource: argument must be a regexp or function";
+        croak "resource '$name': 'argument' must be a regexp or function";
     }
 
     $spec{cleanup_order} //= 0;
-    croak "resource: cleanup_order must be a number"
+    croak "resource '$name': 'cleanup_order' must be a number"
         unless looks_like_number($spec{cleanup_order});
 
-    croak "resource: cleanup is useless while ignore_cache is in use"
+    croak "resource '$name': 'cleanup*' is useless while 'ignore_cache' is in use"
         if $spec{ignore_cache} and (
             defined $spec{cleanup}
             or defined $spec{fork_cleanup}
             or $spec{cleanup_order} != 0
         );
 
-    croak "resource: cleanup must be a function"
+    croak "resource '$name': 'cleanup' must be a function"
         if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne 'CODE';
-    croak "resource: fork_cleanup must be a function"
+    croak "resource '$name': 'fork_cleanup' must be a function"
         if defined $spec{fork_cleanup} and (reftype $spec{fork_cleanup} // '') ne 'CODE';
 
     if ($spec{preload}) {

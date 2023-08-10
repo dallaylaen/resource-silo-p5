@@ -52,57 +52,57 @@ do {
 
     throws_ok {
         resource bar => supercharge => 42, init => sub { };
-    } qr(^resource: .*unknown), 'unknown parameters = no go';
+    } qr(^resource 'bar': .*unknown), 'unknown parameters = no go';
 
     throws_ok {
         resource 'naked';
-    } qr(^resource: .*init), 'init missing = no go';
+    } qr(^resource 'naked': .*init), 'init missing = no go';
 
     throws_ok {
         resource bad_init => [];
-    } qr(^resource: .*init), 'init of wrong type = no go';
+    } qr(^resource 'bad_init': .*init), 'init of wrong type = no go';
 
     throws_ok {
         resource bad_init => "my_func";
-    } qr(^resource: .*init), 'init of wrong type = no go (2)';
+    } qr(^resource 'bad_init': .*init), 'init of wrong type = no go (2)';
 
     throws_ok {
         resource with_param => argument => 42, sub { };
-    } qr(^resource: .*argument.*regex), 'wrong argument spec';
+    } qr(^resource 'with_param': .*argument.*regex), 'wrong argument spec';
 
     throws_ok {
         resource bad_order => cleanup_order => 'never', sub { };
-    } qr(^resource: .*cleanup_order.*number), 'wrong cleanup order spec';
+    } qr(^resource 'bad_order': .*cleanup_order.*number), 'wrong cleanup order spec';
 
     throws_ok {
         resource bad_cleanup => cleanup => {}, sub { };
-    } qr(^resource: .*\bcleanup\b.*function), 'wrong cleanup method spec';
+    } qr(^resource 'bad_cleanup': .*\bcleanup\b.*function), 'wrong cleanup method spec';
 
     throws_ok {
         resource bad_cleanup_2 => cleanup => "function", sub { };
-    } qr(^resource: .*\bcleanup\b.*function), 'wrong cleanup method spec';
+    } qr(^resource '\w+': .*\bcleanup\b.*function), 'wrong cleanup method spec';
 
     throws_ok {
         resource bad_f_cleanup => fork_cleanup => {}, sub { };
-    } qr(^resource: .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
+    } qr(^resource '\w+': .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
 
     throws_ok {
         resource bad_f_cleanup_2 => fork_cleanup => "function", sub { };
-    } qr(^resource: .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
+    } qr(^resource '\w+': .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
 
     throws_ok {
         resource cleanup_wo_cache =>
             cleanup                 => sub {},
             ignore_cache            => 1,
             init                    => sub {};
-    } qr(^resource:.* cleanup .* ignore_cache), 'cleanup incompatible with nocache';
+    } qr(^resource '\w+':.*'cleanup\*'.*'ignore_cache'), 'cleanup incompatible with nocache';
 
     throws_ok {
         resource cleanup_wo_cache_2 =>
             fork_cleanup            => sub {},
             ignore_cache            => 1,
             init                    => sub {};
-    } qr(^resource:.* cleanup .* ignore_cache), 'cleanup incompatible with nocache';
+    } qr(^resource '\w+':.*'cleanup\*'.*'ignore_cache'), 'cleanup incompatible with nocache';
 
     done_testing;
 }
