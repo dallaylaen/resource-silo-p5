@@ -63,6 +63,10 @@ do {
     } qr(^resource: .*init), 'init of wrong type = no go';
 
     throws_ok {
+        resource bad_init => "my_func";
+    } qr(^resource: .*init), 'init of wrong type = no go (2)';
+
+    throws_ok {
         resource with_param => argument => 42, sub { };
     } qr(^resource: .*argument.*regex), 'wrong argument spec';
 

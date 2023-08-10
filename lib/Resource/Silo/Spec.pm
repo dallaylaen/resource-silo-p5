@@ -80,7 +80,7 @@ sub add {
     };
 
     croak "resource: init must be a function"
-        unless $spec{init} and reftype $spec{init} eq 'CODE';
+        unless ref $spec{init} and reftype $spec{init} eq 'CODE';
 
     if (!defined $spec{argument}) {
         $spec{argument} = sub { $_[0] eq ''};
