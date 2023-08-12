@@ -399,8 +399,12 @@ L<https://metacpan.org/release/Resource-Silo>
 
 Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
 
-This software is free software.
-It is available on the same license terms as Perl itself.
+This program is free software.
+You can redistribute it and/or modify it under the terms of either:
+the GNU General Public License as published by the Free Software Foundation,
+or the Artistic License.
+
+See L<http://dev.perl.org/licenses/> for more information.
 
 =cut
 
