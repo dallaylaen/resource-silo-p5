@@ -8,7 +8,7 @@ our $VERSION = 0.001;
 
 =head1 NAME
 
-Resource::Silo - lazy declarative resource management for Perl.
+Resource::Silo - lazy declarative resource container for Perl.
 
 =head1 DESCRIPTION
 
@@ -361,8 +361,16 @@ L<Bread::Board> - a more mature IoC / DI framework.
 
 =head1 ACKNOWLEDGEMENTS
 
-The module was names after a building in the game
+=over
+
+=item * This module was names after a building in the game
 B<I<Heroes of Might and Magic III.>>
+
+=item * This module was inspired in part by my work for
+L<Cloudbeds|https://www.cloudbeds.com/>.
+That was a great time and I had great coworkers!
+
+=back
 
 =head1 BUGS
 
