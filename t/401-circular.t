@@ -28,9 +28,9 @@ subtest 'throws like it should' => sub {
         local $SIG{__WARN__} = sub { die $_[0] };
         my $inst = My::Project->new;
         $line = __LINE__; $inst->foo;
-    } qr/[Cc]ircular dependency/, 'circulalrity detected';
+    } qr/[Cc]ircular dependency/, 'circularity detected';
 
-    like $@, qr($file line $line), 'error attributed correctly';
+    like $@, qr(\Q$file\E line $line), 'error attributed correctly';
 
     note $@;
 };

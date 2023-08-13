@@ -54,7 +54,9 @@ BEGIN {
         My::Database->connect( $conf->{user} );
     };
 
-    $INC{ (__PACKAGE__ =~ s#::#/#gr).".pm" } = __FILE__;
+    my $pmfile = __PACKAGE__;
+    $pmfile =~ s#::#/#g;
+    $INC{ "$pmfile.pm" } = __FILE__;
     1;
 };
 
