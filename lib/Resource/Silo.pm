@@ -16,14 +16,14 @@ We assume the following setup:
 
 =over
 
-=item   (i) The application needs to access multiple resources, such as
+=item * The application needs to access multiple resources, such as
 configuration files, databases, queues, service endpoints, credentials, etc.
 
-=item  (ii) The application has helper scripts that don't need to initialize
+=item * The application has helper scripts that don't need to initialize
 all the resources at once, as well as a test suite where accessing resources
 is undesirable unless a fixture or mock is provided.
 
-=item (iii) The resource management has to be decoupled from the application
+=item * The resource management has to be decoupled from the application
 logic where possible.
 
 =back
@@ -32,14 +32,14 @@ And we propose the following solution:
 
 =over
 
-=item   (i) All available resources are declared in one place
+=item * All available resources are declared in one place
 and encapsulated within a single container.
 
-=item  (ii) Such container is equipped with methods to access resources,
+=item * Such container is equipped with methods to access resources,
 as well as an exportable prototyped function for obtaining the one and true
 instance of it (a.k.a. optional singleton).
 
-=item (iii) Every class or script in the project accesses resources
+=item * Every class or script in the project accesses resources
 through this container and only through it.
 
 =back
