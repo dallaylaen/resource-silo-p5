@@ -48,9 +48,11 @@ Declaring a resource:
 ```perl
     package My::App;
     use Resource::Silo;
-    use YAML::XS qw(LoadFile);
 
-    resource config => sub { LoadFile( "/etc/myapp.yaml" ) };
+    resource config => sub {
+      require YAML::XS;
+      YAML::XS::LoadFile( "/etc/myapp.yaml" );
+    };
     resource dbh    => sub {
       require DBI;
       my $self = shift;
@@ -66,6 +68,22 @@ Declaring a resource:
     };
 ```
 
+Resources with more options:
+
+```perl
+    resource logger =>
+      cleanup_order     => 9e9,     # destroy as late as possible
+      init              => sub { ... };
+
+    resource schema =>
+      derivative        => 1,        # merely a frontend to its dependencies
+      init              => sub {
+        my $self = shift;
+        require My::App::Schema;
+        return My::App::Schema->connect( sub { $self->dbh } );
+      };
+```
+
 Declaring a parametric resource:
 
 ```perl
@@ -74,10 +92,13 @@ Declaring a parametric resource:
 
     use Redis;
     use Redis::Namespace;
-    resource redis_conn => sub {
-        my $self = shift;
-        Redis->new( server => $self->config->{redis} );
-    };
+
+    my %known_namespaces = (
+      lock    => 1,
+      session => 1,
+      user    => 1,
+    );
+
     resource redis =>
         argument      => sub { $known_namespaces{ $_ } },
         init          => sub {
@@ -87,6 +108,16 @@ Declaring a parametric resource:
                 namespace => $ns,
             );
         };
+
+    resource redis_conn => sub {
+        my $self = shift;
+        Redis->new( server => $self->config->{redis} );
+    };
+
+    # later in the code
+    silo->redis;            # nope!
+    silo->redis('session'); # get a prefixed namespace
+
 ```
 
 Using it elsewhere:
@@ -131,7 +162,7 @@ Performing a Big Scary Update:
     my $dbh = silo->ctl->fresh('dbh');
 
     $dbh->begin_work;
-    # any operations on $dbh won't interfere with normal DB usage
+    # any operations on $dbh won't interfere with normal usage
     # of silo->dbh by other application classes.
 ```
 
