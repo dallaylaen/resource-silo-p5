@@ -339,6 +339,7 @@ sub cleanup {
     } keys %{ $self->{-cache} };
 
     foreach my $name (@order) {
+        local $@; # don't pollute $@ if we're in destructor after an exception
         eval {
             # We cannot afford to die here as if we do
             #    a resource that causes exceptions in cleanup
