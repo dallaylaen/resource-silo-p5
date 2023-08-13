@@ -1,5 +1,9 @@
 # Revision history for Resource::Silo
 
+- 0.02    Sun Aug 13 2023
+    - Improve documentation
+    - Fix compatibility with older perls (5.010 & 5.012)
+
 - 0.01    Sat Aug 12 2023
     - First version released on an unsuspecting world
     - `resource` DSL function for Moose-like resource declaration
