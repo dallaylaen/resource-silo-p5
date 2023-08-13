@@ -17,6 +17,11 @@ use Scalar::Util qw( looks_like_number reftype );
 
 my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
 
+# Define possible reftypes portably
+my $CODE   = reftype sub { };
+my $REGEXP = ref qr/.../;
+sub _is_empty { $_[0] eq '' };
+
 =head2 new( $target )
 
 $target is the name of the module where resource access methods will be created.
@@ -80,14 +85,14 @@ sub add {
     };
 
     croak "resource '$name': 'init' must be a function"
-        unless ref $spec{init} and reftype $spec{init} eq 'CODE';
+        unless ref $spec{init} and reftype $spec{init} eq $CODE;
 
     if (!defined $spec{argument}) {
-        $spec{argument} = sub { $_[0] eq ''};
-    } elsif ((reftype $spec{argument} // '') eq 'REGEXP') {
+        $spec{argument} = \&_is_empty;
+    } elsif (ref $spec{argument} eq $REGEXP) {
         my $rex = qr(^(?:$spec{argument})$);
         $spec{argument} = sub { $_[0] =~ $rex };
-    } elsif ((reftype $spec{argument} // '') eq 'CODE') {
+    } elsif ((reftype $spec{argument} // '') eq $CODE) {
         # do nothing, we're fine
     } else {
         croak "resource '$name': 'argument' must be a regexp or function";
@@ -105,9 +110,9 @@ sub add {
         );
 
     croak "resource '$name': 'cleanup' must be a function"
-        if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne 'CODE';
+        if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne $CODE;
     croak "resource '$name': 'fork_cleanup' must be a function"
-        if defined $spec{fork_cleanup} and (reftype $spec{fork_cleanup} // '') ne 'CODE';
+        if defined $spec{fork_cleanup} and (reftype $spec{fork_cleanup} // '') ne $CODE;
 
     if ($spec{preload}) {
         push @{ $self->{-preload} }, $name;
