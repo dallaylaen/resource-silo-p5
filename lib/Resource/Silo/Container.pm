@@ -381,6 +381,10 @@ Get resource metadata object (a L<Resource::Silo::Spec>).
 
 =cut
 
+sub meta {
+    return ${+shift}->{-spec};
+};
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>

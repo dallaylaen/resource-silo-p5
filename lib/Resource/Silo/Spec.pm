@@ -205,6 +205,21 @@ sub _make_dsl {
     return sub { $inst->add(@_) };
 };
 
+=head2 list
+
+Returns a list (or arrayref in scalar context)
+containing the names of known resources.
+
+B<EXPERIMENTAL>. Return value structure is subject to change.
+
+=cut
+
+sub list {
+    my $self = shift;
+    my @list = sort grep { !/^-/ } keys %$self;
+    return wantarray ? @list : \@list;
+};
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
