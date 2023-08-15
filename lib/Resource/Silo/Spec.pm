@@ -147,7 +147,7 @@ sub _make_init_class {
         unless $class =~ /^$BARE_REX(?:::$BARE_REX)*$/i;
     defined $spec->{$_} and croak "resource '$name': 'class' is incompatible with '$_'"
         for qw(init argument);
-    croak "resource '$name': 'class' requires 'deps' to be a hash"
+    croak "resource '$name': 'class' requires 'dependencies' to be a hash"
         unless ref $spec->{dependencies} eq 'HASH';
 
     my %deps = %{ $spec->{dependencies} };

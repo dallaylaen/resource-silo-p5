@@ -8,13 +8,12 @@ Various errors in DSL.
 
 use strict;
 use warnings;
+use Test::More;
+use Test::Exception;
 
-do {
-    package My::App;
-    use Test::More;
-    use Test::Exception;
-    use Resource::Silo;
+use Resource::Silo;
 
+subtest 'resource names' => sub {
     throws_ok {
         resource;
     } qr(^resource: .*identifier), 'no undef names';
@@ -34,7 +33,9 @@ do {
     throws_ok {
         resource 'identifier_followed_by_$', sub { };
     } qr(^resource: .*identifier), 'names must be identifiers';
+};
 
+subtest 'names clash' => sub {
     throws_ok {
         resource new => sub { };
     } qr(^resource: .*replace.*method), 'known method = no go';
@@ -49,11 +50,13 @@ do {
         resource foo => sub { };
         resource foo => sub { };
     } qr(^resource: .*redefine.*resource), 'no duplicates';
+};
 
-    throws_ok {
-        resource bar => supercharge => 42, init => sub { };
-    } qr(^resource 'bar': .*unknown), 'unknown parameters = no go';
+throws_ok {
+    resource bar => supercharge => 42, init => sub { };
+} qr(^resource 'bar': .*unknown), 'unknown parameters = no go';
 
+subtest 'initializer' => sub {
     throws_ok {
         resource 'naked';
     } qr(^resource 'naked': .*init), 'init missing = no go';
@@ -63,13 +66,15 @@ do {
     } qr(^resource 'bad_init': .*init), 'init of wrong type = no go';
 
     throws_ok {
-        resource bad_init => "my_func";
-    } qr(^resource 'bad_init': .*init), 'init of wrong type = no go (2)';
+        resource bad_init_2 => "my_func";
+    } qr(^resource 'bad_init_2': .*init), 'init of wrong type = no go (2)';
+};
 
-    throws_ok {
-        resource with_param => argument => 42, sub { };
-    } qr(^resource 'with_param': .*argument.*regex), 'wrong argument spec';
+throws_ok {
+    resource with_param => argument => 42, sub { };
+} qr(^resource 'with_param': .*argument.*regex), 'wrong argument spec';
 
+subtest 'cleanup' => sub {
     throws_ok {
         resource bad_order => cleanup_order => 'never', sub { };
     } qr(^resource 'bad_order': .*cleanup_order.*number), 'wrong cleanup order spec';
@@ -103,7 +108,71 @@ do {
             ignore_cache            => 1,
             init                    => sub {};
     } qr(^resource '\w+':.*'cleanup\*'.*'ignore_cache'), 'cleanup incompatible with nocache';
+};
 
-    done_testing;
-}
+subtest 'dependencies' => sub {
+    throws_ok {
+        resource deps_1 =>
+            dependencies    => \"foo",
+            init            => sub {};
+    } qr(^resource '\w+': 'dependencies'.*array), "dependencies must be array";
+
+    throws_ok {
+        resource deps_2 =>
+            dependencies    => [42],
+            init            => sub {};
+    } qr(^resource '\w+': illegal dependenc), "dependencies must be array";
+
+    throws_ok {
+        resource deps_3 =>
+            dependencies    => [\"foo"],
+            init            => sub {};
+    } qr(^resource '\w+': illegal dependenc), "dependencies must be array";
+};
+
+subtest 'Bread::Board-like DI' => sub {
+    throws_ok {
+        resource class_di_1 =>
+            class               => 'My::Resource',
+            init                => sub { };
+    } qr(^resource '\w+': 'class' .*incompatible.*init), "class + init = no go";
+
+    throws_ok {
+        resource class_di_2 =>
+            class               => 'lib/My/Resource.pm',
+            dependencies        => {};
+    } qr(^resource '\w+': 'class' .* package .* 'lib/My), "bad package name";
+
+    throws_ok {
+        resource class_di_3 =>
+            class               => 'My::Resource',
+            dependencies        => \"foo::bar";
+    } qr(^resource '\w+': 'class'.*'dependencies'), "bad dependency spec";
+
+    throws_ok {
+        resource class_di_4 =>
+            class               => 'My::Resource',
+            dependencies        => {
+                foo => [ '$name' ],
+            };
+    } qr(^resource '\w+': dependency 'foo'.*format), "bad new() parameter spec";
+
+    throws_ok {
+        resource class_di_5 =>
+            class               => 'My::Resource',
+            dependencies        => {
+                foo => [ name => 1 => 2 => 3 ],
+            };
+    } qr(^resource '\w+': dependency 'foo'.*format), "bad new() parameter spec (2)";
+
+    throws_ok {
+        resource class_di_6 =>
+            class               => 'My::Resource',
+            dependencies        => {
+                foo => {},
+            };
+    } qr(^resource '\w+': dependency 'foo'.*format), "bad new() parameter spec (3)";
+};
+
+done_testing;
 
