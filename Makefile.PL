@@ -19,6 +19,7 @@ my %WriteMakefileArgs = (
     },
     PREREQ_PM => {
         'Scalar::Util'          => 1.23,
+        'Sub::Quote'            => 2,
     },
     META_MERGE => {
         "meta-spec" => { version => 2 },

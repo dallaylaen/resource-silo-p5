@@ -14,8 +14,10 @@ Resource::Silo::Spec - description of known resource types for L<Resource::Silo>
 
 use Carp;
 use Scalar::Util qw( looks_like_number reftype );
+use Sub::Quote qw( quote_sub );
 
-my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
+my $BARE_REX = '[a-z][a-z_0-9]*';
+my $ID_REX   = qr(^$BARE_REX$);
 
 # Define possible reftypes portably
 my $CODE   = reftype sub { };
@@ -44,6 +46,7 @@ Create resource type. See L<Resource::Silo/resource> for details.
 
 my %known_args = (
     argument        => 1,
+    class           => 1,
     dependencies    => 1,
     derivative      => 1,
     cleanup         => 1,
@@ -73,6 +76,9 @@ sub add {
     my @extra = grep { !$known_args{$_} } keys %spec;
     croak "resource '$name': unknown arguments in specification: @extra"
         if @extra;
+
+    _make_init_class($self, $name, \%spec)
+        if (defined $spec{class});
 
     if (my $deps = delete $spec{dependencies}) {
         croak "resource '$name': 'dependencies' must be an array"
@@ -129,6 +135,54 @@ sub add {
     }
 
     return $self;
+};
+
+sub _make_init_class {
+    my ($self, $name, $spec) = @_;
+
+    my $class = $spec->{class};
+    $spec->{dependencies} //= {};
+
+    croak "resource '$name': 'class' doesn't look like a package name: '$class'"
+        unless $class =~ /^$BARE_REX(?:::$BARE_REX)*$/i;
+    defined $spec->{$_} and croak "resource '$name': 'class' is incompatible with '$_'"
+        for qw(init argument);
+    croak "resource '$name': 'class' requires 'deps' to be a hash"
+        unless ref $spec->{dependencies} eq 'HASH';
+
+    my %deps = %{ $spec->{dependencies} };
+
+    my @realdeps;
+    my @body = ("my \$c = shift;", "require $class;", "$class->new(" );
+
+    # format: constructor_arg => [ resource_name, resource_arg ]
+    foreach my $key (keys %deps) {
+        my $entry = $deps{$key};
+        croak "resource '$name': dependency '$key' has wrong format"
+            unless (
+                    ref $entry eq 'ARRAY'
+                and @$entry <= 2
+                and ($entry->[0] // '') =~ $ID_REX
+            );
+        push @realdeps, $entry->[0];
+
+        push @body, length ($entry->[1] // '')
+            ? sprintf( "\t'%s' => \$c->%s('%s'),",
+                quotemeta $key, $entry->[0], quotemeta $entry->[1] )
+            : sprintf( "\t'%s' => \$c->%s,", quotemeta $key, $entry->[0] );
+    };
+    push @body, ");";
+
+    $spec->{init} = quote_sub(
+        "init_of_$name",
+        join( "\n", @body ),
+        {},
+        {
+            no_install => 1,
+            package    => $self->{-target},
+        }
+    );
+    $spec->{dependencies} = \@realdeps;
 };
 
 =head2 spec
