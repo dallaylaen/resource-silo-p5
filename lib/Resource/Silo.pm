@@ -344,7 +344,7 @@ sub import {
 
     push @{"${caller}::ISA"}, 'Exporter';
     push @{"${caller}::EXPORT"}, qw(silo);
-    *{"${caller}::resource"} = $spec->generate_dsl;
+    *{"${caller}::resource"} = $spec->_make_dsl;
     *{"${caller}::silo"}     = $silo;
 };
 

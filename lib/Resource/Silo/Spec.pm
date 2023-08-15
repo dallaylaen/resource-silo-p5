@@ -69,7 +69,7 @@ sub add {
     croak "resource: name must be an identifier"
         unless defined $name and !ref $name and $name =~ $ID_REX;
     croak "resource: attempt to redefine resource '$name'"
-        if $self->spec($name);
+        if defined $self->{$name};
     croak "resource: attempt to replace existing method '$name' in $target"
         if $target->can($name);
 
@@ -200,28 +200,7 @@ sub _make_init_class {
     $spec->{dependencies} = \@realdeps;
 };
 
-=head2 spec
-
-Fetch specifications for given resource.
-
-=cut
-
-# TODO name!!!
-sub spec {
-    my ($self, $name) = @_;
-    croak "Illegal resource name '$name'"
-        unless $name =~ $ID_REX;
-    return $self->{$name};
-};
-
-=head2 generate_dsl
-
-Create C<resource> function closed over current object.
-
-=cut
-
-# TODO name!!
-sub generate_dsl {
+sub _make_dsl {
     my $inst = shift;
     return sub { $inst->add(@_) };
 };

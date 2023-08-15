@@ -84,7 +84,7 @@ sub _instantiate_resource {
     croak "Illegal resource name '$name'"
         unless $name =~ $ID_REX;
 
-    my $spec = $self->{-spec}->spec($name);
+    my $spec = $self->{-spec}{$name};
     $arg //= '';
 
     croak "Attempting to fetch nonexistent resource '$name'"
@@ -374,6 +374,12 @@ architectural problem.
 sub fresh {
     return ${+shift}->_instantiate_resource(@_);
 };
+
+=head2 meta
+
+Get resource metadata object (a L<Resource::Silo::Spec>).
+
+=cut
 
 =head1 COPYRIGHT AND LICENSE
 
