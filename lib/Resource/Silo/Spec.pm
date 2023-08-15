@@ -152,12 +152,25 @@ sub _make_init_class {
 
     my %deps = %{ $spec->{dependencies} };
 
+    my %pass_args;
     my @realdeps;
     my @body = ("my \$c = shift;", "require $class;", "$class->new(" );
 
     # format: constructor_arg => [ resource_name, resource_arg ]
     foreach my $key (keys %deps) {
         my $entry = $deps{$key};
+
+        if (ref $entry eq 'SCALAR') {
+            # pass a literal value to the constructor
+            $pass_args{$key} = $$entry;
+            next;
+        };
+
+        if (defined $entry and !ref $entry) {
+            # allow bareword, and alias `foo => 1` to `foo => ['foo']
+            $entry = $key if $entry eq '1';
+            $entry = [ $entry ];
+        };
         croak "resource '$name': dependency '$key' has wrong format"
             unless (
                     ref $entry eq 'ARRAY'
@@ -171,12 +184,14 @@ sub _make_init_class {
                 quotemeta $key, $entry->[0], quotemeta $entry->[1] )
             : sprintf( "\t'%s' => \$c->%s,", quotemeta $key, $entry->[0] );
     };
+    push @body, "\t\%pass_args"
+        if %pass_args;
     push @body, ");";
 
     $spec->{init} = quote_sub(
         "init_of_$name",
         join( "\n", @body ),
-        {},
+        (%pass_args ? { '%pass_args' => \%pass_args, } : {}),
         {
             no_install => 1,
             package    => $self->{-target},
