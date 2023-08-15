@@ -304,7 +304,7 @@ use Carp;
 use Exporter;
 use Scalar::Util qw( set_prototype );
 
-use Resource::Silo::Spec;
+use Resource::Silo::Metadata;
 use Resource::Silo::Container;
 
 # Store definitions here
@@ -327,7 +327,7 @@ sub import {
 
     $target ||= __PACKAGE__."::container::".$caller;
 
-    my $spec = Resource::Silo::Spec->new($target);
+    my $spec = Resource::Silo::Metadata->new($target);
     $metadata{$target} = $spec;
 
     my $instance;

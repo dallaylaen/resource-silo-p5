@@ -25,7 +25,7 @@ use Test::More;
 
 my $metafoo = My::Foo->new->ctl->meta;
 
-is ref $metafoo, 'Resource::Silo::Spec', "correct metaclass ref";
+is ref $metafoo, 'Resource::Silo::Metadata', "correct metaclass ref";
 is_deeply [$metafoo->list], ['one'], "just one resource";
 is_deeply scalar $metafoo->list, ['one'], "ditto in scalar context";
 

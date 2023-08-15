@@ -1,4 +1,4 @@
-package Resource::Silo::Spec;
+package Resource::Silo::Metadata;
 
 use strict;
 use warnings;
@@ -6,7 +6,14 @@ our $VERSION = '0.02';
 
 =head1 NAME
 
-Resource::Silo::Spec - description of known resource types for L<Resource::Silo>
+Resource::Silo::Metadata - resource container metadata for L<Resource::Silo>.
+
+=head1 DESCRIPTION
+
+This class stores information about available resources in a specific
+container class. Normally only used internally.
+
+See also L<Resource::Silo/meta>.
 
 =head1 METHODS
 

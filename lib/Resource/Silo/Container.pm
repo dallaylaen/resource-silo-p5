@@ -377,7 +377,7 @@ sub fresh {
 
 =head2 meta
 
-Get resource metadata object (a L<Resource::Silo::Spec>).
+Get resource metadata object (a L<Resource::Silo::Metadata>).
 
 =cut
 
