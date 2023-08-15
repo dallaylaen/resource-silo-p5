@@ -236,6 +236,66 @@ See L</FORKING>
 
 This may be useful if cleanup is destructive and shouldn't be performed twice.
 
+=item * dependencies => \@list
+
+If specified, only allow resources from the list to be fetched
+in the initializer.
+
+This parameter has a different meaning if C<class> parameter is in use (see below).
+
+=item * class => 'Class::Name'
+
+Turn on Spring-style dependency injection.
+This forbids C<init> and C<argument> parameters
+and requires C<dependencies> to be a hash.
+
+The dependencies' keys become the arguments to C<Class::Name-E<gt>new>,
+and the values format is as follows:
+
+=over
+
+=item * argument_name => resource_name
+
+Use a resource without parameter;
+
+=item * argument_name => [ resource_name => argument ]
+
+Use a parametric resource;
+
+=item * resource_name => 1
+
+Shorthand for C<resource_name =E<gt> resource_name>;
+
+=item * name => \$literal_value
+
+Pass $literal_value to the constructor as is.
+
+=back
+
+So this:
+
+    resource foo =>
+        class           => 'My::Foo',
+        dependencies    => {
+            dbh     => 1,
+            redis   => [ redis => 'session' ],
+            version => \3.14,
+        };
+
+Is roughly equivalent to:
+
+    resource foo =>
+        dependencies    => [ 'dbh', 'redis' ],
+        init            => sub {
+            my $c = shift;
+            require My::Foo;
+            My::Foo->new(
+                dbh     => $c->dbh,
+                redis   => $c->redis('session'),
+                version => 3.14,
+            );
+        };
+
 =back
 
 =cut
