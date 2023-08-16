@@ -54,8 +54,11 @@ sub new {
         -pid  => $$,
         -spec => $spec,
     }, $class;
-    $self->ctl->override( @_ )
-        if @_;
+    if (@_) {
+        croak "Odd number of additional arguments in new()"
+            if @_ % 2;
+        $self->_override_resources({ @_ });
+    };
     $active_instances{ refaddr $self } = $self;
     weaken $active_instances{ refaddr $self };
     return $self;
@@ -210,7 +213,7 @@ sub _make_resource_accessor {
     };
 };
 
-sub _override_resource {
+sub _check_overrides {
     my ($self, $subst) = @_;
 
     foreach my $name (keys %$subst) {
@@ -218,6 +221,15 @@ sub _override_resource {
             unless $name =~ $ID_REX;
         croak "Attempt to override unknown resource '$name'"
             unless $self->{-spec}{$name};
+    };
+};
+
+sub _override_resources {
+    my ($self, $subst) = @_;
+
+    foreach my $name (keys %$subst) {
+        # Just skip over unknown resources if we're in constructor
+        next unless $self->{-spec}{$name} && $name =~ $ID_REX;
         my $init = $subst->{$name};
 
         # Finalize existing values in cache, just in case
@@ -277,7 +289,8 @@ for the affected resources.
 sub override {
     my ($self, %subst) = @_;
 
-    $$self->_override_resource(\%subst);
+    $$self->_check_overrides(\%subst);
+    $$self->_override_resources(\%subst);
 
     return $self;
 }

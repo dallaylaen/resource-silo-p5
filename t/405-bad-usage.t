@@ -17,6 +17,10 @@ resource self_trigger =>
     };
 
 throws_ok {
+    silo->new({ self_trigger => 42 });
+} qr(Odd number.*in new\(\)), "new() checks number of args";
+
+throws_ok {
     silo->ctl->fresh('my_resource_$');
 } qr(Illegal.*'.*_\$'), "resource names must be identifiers";
 
