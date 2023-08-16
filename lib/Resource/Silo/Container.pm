@@ -76,6 +76,42 @@ END {
     };
 };
 
+=head2 C<ctl>
+
+As the container class may contain arbitrary resource names and
+user-defined methods to boot, we intend to declare as few public methods
+as possible.
+
+Instead, we create a facade object that has access to container's internals
+and can perform fine-grained management operations.
+See L</CONTROL INTERFACE> below.
+
+Example:
+
+    # Somewhere in a test file
+    use Test::More;
+    use My::App qw(silo);
+
+    silo->ctl->override( dbh => $fake_database_connection );
+    silo->ctl->lock; # forbid instantiating new resources
+
+Returns a facade object.
+
+B<NOTE> Such object contains a weak reference to the parent object
+and thus must not be saved anywhere, lest you be surprised.
+Use it and discard immediately.
+
+=cut
+
+sub ctl {
+    my $self = shift;
+    my $facade = bless \$self, 'Resource::Silo::Container::Dashboard';
+    weaken $$facade;
+    confess "Attempt to close over nonexistent value"
+        unless $$facade;
+    return $facade;
+};
+
 # Instantiate resource $name with argument $argument.
 # This is what a silo->resource_name calls after checking the cache.
 sub _instantiate_resource {
@@ -144,7 +180,7 @@ sub _cleanup_resource {
 
 # We must create resource accessors in this package
 #   so that errors get attributed correctly
-#   (+ This way no other class need to know our internal structure)
+#   (+ This way no other classes need to know our internal structure)
 sub _make_resource_accessor {
     my ($name, $spec) = @_;
 
@@ -174,42 +210,36 @@ sub _make_resource_accessor {
     };
 };
 
+sub _override_resource {
+    my ($self, $subst) = @_;
+
+    foreach my $name (keys %$subst) {
+        croak "Illegal resource name '$name'"
+            unless $name =~ $ID_REX;
+        croak "Attempt to override unknown resource '$name'"
+            unless $self->{-spec}{$name};
+        my $init = $subst->{$name};
+
+        # Finalize existing values in cache, just in case
+        # BEFORE setting up override
+        $self->_cleanup_resource($name);
+
+        if (defined $init) {
+            $self->{-override}{$name} = (reftype $init // '') eq 'CODE'
+                ? $init
+                : sub { $init };
+        } else {
+            delete $self->{-override}{$name};
+        };
+    };
+}
+
 =head1 CONTROL INTERFACE
 
-Sometimes more fine-grained control over the container is needed than just
-fetching the resources.
-
-Since the container class can contain arbitrary resource names and
-some user-defined methods to boot, instead of polluting its namespace,
-we provide a single method, C<ctl>, that returns a temporary facade object
-that provide access to the following methods.
-
-Most of them return the facade so that they can be chained. E.g.
-
-    # somewhere in your tests
-    silo->ctl->lock->override(
-        config  => { ... },     # some fixed values
-        dbh     => sub { ... }, # return SQLite instance
-    );
-
-=head2 C<ctl>
-
-Returns the facade.
-
-B<NOTE> the facade object is weak reference to the parent object
-and thus must not be save anywhere, lest you be surprised.
-Use it and discard immediately.
+The below methods are all accessible via
+C<$container-E<gt>ctl-E<gt>$method_name>.
 
 =cut
-
-sub ctl {
-    my $self = shift;
-    my $facade = bless \$self, 'Resource::Silo::Container::Dashboard';
-    weaken $$facade;
-    confess "Attempt to close over nonexistent value"
-        unless $$facade;
-    return $facade;
-};
 
 # We're declaring a different package in the same file because
 # 1) it must have access to the internals anyway and
@@ -247,25 +277,7 @@ for the affected resources.
 sub override {
     my ($self, %subst) = @_;
 
-    foreach my $name (keys %subst) {
-        croak "Illegal resource name '$name'"
-            unless $name =~ $ID_REX;
-        croak "Attempt to override unknown resource '$name'"
-            unless $$self->{-spec}{$name};
-        my $init = $subst{$name};
-
-        # Finalize existing values in cache, just in case
-        # BEFORE setting up override
-        $$self->_cleanup_resource($name);
-
-        if (defined $init) {
-            $$self->{-override}{$name} = (reftype $init // '') eq 'CODE'
-                ? $init
-                : sub { $init };
-        } else {
-            delete $$self->{-override}{$name};
-        };
-    };
+    $$self->_override_resource(\%subst);
 
     return $self;
 }
