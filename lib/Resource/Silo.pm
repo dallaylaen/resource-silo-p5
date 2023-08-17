@@ -432,6 +432,133 @@ Usage together with C<Moo> works, but only if L<Resource::Silo> comes first:
 
 Compatibility issues are being slowly worked on.
 
+=head1 MORE EXAMPLES
+
+=head2 Normal operation
+
+    package My::App;
+    use Resource::Silo;
+
+    resource config => sub {
+        require YAML::XS;
+        YAML::XS::LoadFile( "/etc/myapp.yaml" );
+    };
+
+    resource dbh    => sub {
+        require DBI;
+        my $self = shift;
+        my $conf = $self->config->{database};
+        DBI->connect(
+            $conf->{dbi}, $conf->{username}, $conf->{password}, { RaiseError => 1 }
+        );
+    };
+
+    resource user_agent => sub {
+        require LWP::UserAgent;
+        LWP::UserAgent->new();
+        # set your custom UserAgent header or SSL certificate(s) here
+    };
+
+Note that lazy-loading the modules is not necessary,
+but it may speed up loading support scripts.
+
+=head2 Resources with extra options
+
+    resource logger =>
+        cleanup_order     => 9e9,     # destroy as late as possible
+        init              => sub {
+            require Log::Any;
+            require Log::Any::Adapter;
+            Log::Any::Adapter->set( 'Stderr' );
+            # your rsyslog config could be here
+            Log::Any->get_logger;
+        };
+
+    resource schema =>
+        derivative        => 1,        # merely a frontend to dbi
+        init              => sub {
+            my $self = shift;
+            require My::App::Schema;
+            return My::App::Schema->connect( sub { $self->dbh } );
+        };
+
+=head2 Resource with parameter
+
+An useless but short example:
+
+    #!/usr/bin/env perl
+
+    use strict;
+    use warnings;
+    use Resource::Silo;
+
+    resource fibonacci =>
+        argument            => qr(\d+),
+        init                => sub {
+            my ($self, $name, $arg) = @_;
+            $arg <= 1 ? $arg
+                : $self->fibonacci($arg-1) + $self->fibonacci($arg-2);
+        };
+
+    print silo->fibonacci(shift);
+
+A more pragmatic one:
+
+    package My::App;
+    use Resource::Silo;
+
+    use Redis;
+    use Redis::Namespace;
+
+    my %known_namespaces = (
+        lock    => 1,
+        session => 1,
+        user    => 1,
+    );
+
+    resource redis =>
+        argument      => sub { $known_namespaces{ $_ } },
+        init          => sub {
+            my ($self, $name, $ns) = @_;
+            Redis::Namespace->new(
+                redis     => $self->redis,
+                namespace => $ns,
+            );
+        };
+
+    resource redis_conn => sub {
+        my $self = shift;
+        Redis->new( server => $self->config->{redis} );
+    };
+
+    # later in the code
+    silo->redis;            # nope!
+    silo->redis('session'); # get a prefixed namespace
+
+=head3 Overriding in test files
+
+    use Test::More;
+    use My::App qw(silo);
+
+    silo->ctl->override( dbh => $temp_sqlite_connection );
+    silo->ctl->lock;
+
+    my $stuff = My::App::Stuff->new();
+    $stuff->frobnicate( ... );        # will only affect the sqlite instance
+
+    $stuff->ping_partner_api();       # oops! the user_agent resource wasn't
+                                      # overridden, so there'll be an exception
+
+=head3 Fetching a dedicated resource instance
+
+    use My::App qw(silo);
+    my $dbh = silo->ctl->fresh('dbh');
+
+    $dbh->begin_work;
+    # Perform a Big Scary Update here
+    # Any operations on $dbh won't interfere with normal usage
+    #     of silo->dbh by other application classes.
+
 =head1 SEE ALSO
 
 L<Bread::Board> - a more mature IoC / DI framework.
