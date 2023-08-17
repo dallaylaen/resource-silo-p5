@@ -49,13 +49,6 @@ through this container and only through it.
 The default mode is to create a one-off container for all resources
 and export if into the calling class via C<silo> function.
 
-Note that calling C<use Resource::Silo> from a different module will
-create a I<separate> container instance. You'll have to re-export
-(or otherwise provide access to) the C<silo> function.
-
-I<This is done on purpose so that multiple projects or modules can coexist
-within the same interpreter without interference.>
-
     package My::App;
     use Resource::Silo;
 
@@ -128,8 +121,6 @@ by default;
 
 =back
 
-=head1 RESOURCE DECLARATION
-
 =head2 resource
 
     resource 'name' => sub { ... };
@@ -137,16 +128,14 @@ by default;
 
 %options may include:
 
-=over
-
-=item * init => sub { $self, $name, [$argument] }
+=head3 init => sub { $self, $name, [$argument] }
 
 A coderef to obtain the resource. Required.
 
 If the number of arguments is odd,
 the last one is popped and considered to be the init function.
 
-=item * argument => C<sub { ... }> || C<qr( ... )>
+=head3 argument => C<sub { ... }> || C<qr( ... )>
 
 If specified, assume that the resource in question may have several instances,
 distinguished by a string argument. Such argument will be passed as the 3rd
@@ -183,7 +172,7 @@ Example:
             );
         };
 
-=item * derivative => 1 | 0
+=head3 derivative => 1 | 0
 
 Assume that resource can be derived from its dependencies,
 or that it introduces no extra side effects compared to them.
@@ -197,18 +186,18 @@ initialized or overridden.
 
 See L<Resource::Silo::Container/lock>.
 
-=item * ignore_cache => 1 | 0
+=head3 ignore_cache => 1 | 0
 
 If set, don't cache resource, always create a fresh one instead.
 See also L<Resource::Silo::Container/fresh>.
 
-=item * preload => 1 | 0
+=head3 preload => 1 | 0
 
 If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
 Useful if you want to throw errors when a service is starting,
 not during request processing.
 
-=item * cleanup => sub { $resource_instance }
+=head3 cleanup => sub { $resource_instance }
 
 Undo the init procedure.
 Usually it is assumed that the resource will do it by itself in the destructor,
@@ -221,7 +210,7 @@ erasing the object from the cache.
 
 See also C<fork_cleanup>.
 
-=item * cleanup_order => $number
+=head3 cleanup_order => $number
 
 The higher the number, the later the resource will get destroyed.
 
@@ -229,21 +218,21 @@ The default is 0, negative numbers are also valid, if that makes sense for
 you application
 (e.g. destroy C<$my_service_main_object> before the resources it consumes).
 
-=item * fork_cleanup => sub { $resource_instance }
+=head3 fork_cleanup => sub { $resource_instance }
 
 Like C<cleanup>, but only in case a change in process ID was detected.
 See L</FORKING>
 
 This may be useful if cleanup is destructive and shouldn't be performed twice.
 
-=item * dependencies => \@list
+=head3 dependencies => \@list
 
 If specified, only allow resources from the list to be fetched
 in the initializer.
 
 This parameter has a different meaning if C<class> parameter is in use (see below).
 
-=item * class => 'Class::Name'
+=head3 class => 'Class::Name'
 
 Turn on Spring-style dependency injection.
 This forbids C<init> and C<argument> parameters
@@ -296,7 +285,20 @@ Is roughly equivalent to:
             );
         };
 
-=back
+=head2 silo
+
+A re-exportable singleton function returning
+one and true L<Resource::Silo::Container> instance
+associated with the class where the resources were declared.
+
+B<NOTE> Calling C<use Resource::Silo> from a different module will
+create a I<separate> container instance. You'll have to re-export
+(or otherwise provide access to) this function.
+
+I<This is done on purpose so that multiple projects or modules can coexist
+within the same interpreter without interference.>
+
+C<silo-E<gt>new> will create a new instance of the I<same> container class.
 
 =cut
 
