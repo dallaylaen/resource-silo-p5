@@ -34,11 +34,11 @@ throws_ok {
 
 throws_ok {
     silo->ctl->override('-target' => sub { 1 });
-} qr(Illegal.*'-target'), "can't override poorly named resource";
+} qr(Attempt to override.*unknown.*'-target'), "can't override poorly named resource";
 
 throws_ok {
     silo->ctl->override('bad_res_name_*' => sub { 1 });
-} qr(Illegal.*'bad_res_name_\*'), "can't override poorly named resource";
+} qr(Attempt to override.*unknown.*'bad_res_name_\*'), "can't override poorly named resource";
 
 throws_ok {
     silo->ctl->override('not_there' => sub { 1 });

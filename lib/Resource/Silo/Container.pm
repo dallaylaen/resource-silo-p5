@@ -123,7 +123,7 @@ sub _instantiate_resource {
     croak "Illegal resource name '$name'"
         unless $name =~ $ID_REX;
 
-    my $spec = $self->{-spec}{$name};
+    my $spec = $self->{-spec}{resource}{$name};
     $arg //= '';
 
     croak "Attempting to fetch nonexistent resource '$name'"
@@ -158,15 +158,17 @@ sub _instantiate_resource {
 # use instead of delete $self->{-cache}{$name}
 sub _cleanup_resource {
     my ($self, $name, @list) = @_;
+
     # TODO Do we need to validate arguments here?
+    my $spec = $self->{-spec}{resource}{$name};
 
     my $action;
     if (!$self->{-override}{$name}) {
         # 1) skip resources that have overrides
         # 2) if we're in "no pid" mode, use fork_cleanup if available
         $action = $self->{-pid} != $$
-            && $self->{-spec}{$name}{fork_cleanup}
-            || $self->{-spec}{$name}{cleanup};
+            && $spec->{fork_cleanup}
+            || $spec->{cleanup};
     };
     my $known = $self->{-cache}{$name};
 
@@ -216,20 +218,21 @@ sub _make_resource_accessor {
 sub _check_overrides {
     my ($self, $subst) = @_;
 
-    foreach my $name (keys %$subst) {
-        croak "Illegal resource name '$name'"
-            unless $name =~ $ID_REX;
-        croak "Attempt to override unknown resource '$name'"
-            unless $self->{-spec}{$name};
-    };
+    my $known = $self->{-spec}{resource};
+    my @bad = grep { !$known->{$_} } keys %$subst;
+    croak "Attempt to override unknown resource(s): "
+        .join ", ", map { "'$_'" } @bad
+            if @bad;
 };
 
 sub _override_resources {
     my ($self, $subst) = @_;
 
+    my $known = $self->{-spec}{resource};
+
     foreach my $name (keys %$subst) {
         # Just skip over unknown resources if we're in constructor
-        next unless $self->{-spec}{$name} && $name =~ $ID_REX;
+        next unless $known->{$name};
         my $init = $subst->{$name};
 
         # Finalize existing values in cache, just in case
@@ -336,7 +339,7 @@ sub preload {
     # TODO allow specifying resources to load
     #      but first come up with a way of specifying arguments, too.
 
-    my $list = $$self->{-spec}{-preload};
+    my $list = $$self->{-spec}{preload};
     for my $name (@$list) {
         my $unused = $$self->$name;
     };
@@ -358,7 +361,7 @@ sub cleanup {
 
     # NOTE Be careful! cleanup must never ever die!
 
-    my $spec = $self->{-spec};
+    my $spec = $self->{-spec}{resource};
     my @order = sort {
         $spec->{$a}{cleanup_order} <=> $spec->{$b}{cleanup_order};
     } keys %{ $self->{-cache} };
