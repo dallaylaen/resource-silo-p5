@@ -20,6 +20,7 @@ See also L<Resource::Silo/meta>.
 =cut
 
 use Carp;
+use Module::Load qw( load );
 use Scalar::Util qw( looks_like_number reftype );
 use Sub::Quote qw( quote_sub );
 
@@ -242,6 +243,52 @@ sub list {
     my $self = shift;
     my @list = sort grep { !/^-/ } keys %{ $self->{resource} };
     return wantarray ? @list : \@list;
+};
+
+=head2 self_check()
+
+Check setup validity. Dies on errors, return C<$self> otherwise.
+
+The following checks are available so far:
+
+=over
+
+=item * dependencies must be defined;
+
+=item * required modules must be loadable.
+
+=back
+
+B<EXPERIMENTAL>. Interface & performed checks may change in the future.
+
+=cut
+
+sub self_check {
+    my $self = shift;
+
+    my $res = $self->{resource};
+    foreach my $name (sort keys %$res) {
+        my $entry = $res->{$name};
+
+        my @missing_deps = grep { !$res->{$_} } keys %{ $entry->{allowdeps} };
+        croak "resource '$name': missing dependencies: ".
+            join ", ", map { "'$_'" } @missing_deps
+                if @missing_deps;
+
+        local $@;
+        my $mod;
+        eval {
+            foreach ( @{ $entry->{require} } ) {
+                $mod = $_;
+                load $mod;
+            };
+            1;
+        } || do {
+            croak "resource '$name': failed to load required module '$mod': $@";
+        };
+    };
+
+    return $self;
 };
 
 =head1 COPYRIGHT AND LICENSE

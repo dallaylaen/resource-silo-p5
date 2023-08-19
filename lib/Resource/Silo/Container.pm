@@ -338,14 +338,21 @@ Try loading all the resources that have C<preload> flag set.
 May be useful if e.g. a server-side application is starting and must
 check its database connection(s) before it starts handling any clients.
 
+In addition, self-check will be called and all declared C<require>'d
+modules will be loaded, even if they are not required by preloaded resources.
+
 =cut
 
 sub preload {
     my $self = shift;
     # TODO allow specifying resources to load
-    #      but first come up with a way of specifying arguments, too.
+    #      but first come up with a way to specify arguments, too.
 
-    my $list = $$self->{-spec}{preload};
+    my $meta = $$self->{-spec};
+
+    $meta->self_check;
+
+    my $list = $meta->{preload};
     for my $name (@$list) {
         my $unused = $$self->$name;
     };
