@@ -39,7 +39,7 @@ subtest 'names clash' => sub {
     throws_ok {
         resource new => sub { };
     } qr(^resource: .*replace.*method), 'known method = no go';
-    my $where = __FILE__." line ".(__LINE__-2);
+    my $where = (quotemeta __FILE__)." line ".(__LINE__-2);
     like $@, qr($where), 'error attributed correctly';
 
     throws_ok {
