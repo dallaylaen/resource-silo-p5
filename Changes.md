@@ -1,5 +1,9 @@
 # Revision history for Resource::Silo
 
+- 0.05    Sat Aug 19 2023
+    - [test] Make sure tests work on windows (quotemeta \)
+    - [doc] Add more examples to doc
+
 - 0.04    Thu Aug 17 2023
     - Make constructor more compatible with Moo
 
