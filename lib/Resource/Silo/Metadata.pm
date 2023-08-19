@@ -24,7 +24,8 @@ use Scalar::Util qw( looks_like_number reftype );
 use Sub::Quote qw( quote_sub );
 
 my $BARE_REX = '[a-z][a-z_0-9]*';
-my $ID_REX   = qr(^$BARE_REX$);
+my $ID_REX   = qr(^$BARE_REX$)i;
+my $MOD_REX  = qr(^$BARE_REX(?:::$BARE_REX)*$)i;
 
 # Define possible reftypes portably
 my $CODE   = reftype sub { };
@@ -62,6 +63,7 @@ my %known_args = (
     ignore_cache    => 1,
     init            => 1,
     preload         => 1,
+    require         => 1,
 );
 sub add {
     my $self = shift;
@@ -83,6 +85,19 @@ sub add {
     my @extra = grep { !$known_args{$_} } keys %spec;
     croak "resource '$name': unknown arguments in specification: @extra"
         if @extra;
+
+    {
+        # validate 'require' before 'class'
+        if (!ref $spec{require}) {
+            $spec{require} = defined $spec{require} ? [ $spec{require} ] : [];
+        };
+        croak "resource '$name': 'require' must be a module name or a list thereof"
+            unless ref $spec{require} eq 'ARRAY';
+        my @bad = grep { $_ !~ $MOD_REX } @{ $spec{require} };
+        croak "resource '$name': 'require' doesn't look like module name(s): "
+            .join ", ", map { "'$_'" } @bad
+                if @bad;
+    };
 
     _make_init_class($self, $name, \%spec)
         if (defined $spec{class});
@@ -151,7 +166,7 @@ sub _make_init_class {
     $spec->{dependencies} //= {};
 
     croak "resource '$name': 'class' doesn't look like a package name: '$class'"
-        unless $class =~ /^$BARE_REX(?:::$BARE_REX)*$/i;
+        unless $class =~ $MOD_REX;
     defined $spec->{$_} and croak "resource '$name': 'class' is incompatible with '$_'"
         for qw(init argument);
     croak "resource '$name': 'class' requires 'dependencies' to be a hash"
@@ -159,9 +174,11 @@ sub _make_init_class {
 
     my %deps = %{ $spec->{dependencies} };
 
+    push @{ $spec->{require} }, $class;
+
     my %pass_args;
     my @realdeps;
-    my @body = ("my \$c = shift;", "require $class;", "$class->new(" );
+    my @body = ("my \$c = shift;", "$class->new(" );
 
     # format: constructor_arg => [ resource_name, resource_arg ]
     foreach my $key (keys %deps) {

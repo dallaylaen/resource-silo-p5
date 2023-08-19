@@ -47,8 +47,8 @@ subtest 'names clash' => sub {
     } qr(^resource: .*replace.*method), 'known method = no go';
 
     throws_ok {
-        resource foo => sub { };
-        resource foo => sub { };
+        resource dup => sub { };
+        resource dup => sub { };
     } qr(^resource: .*redefine.*resource), 'no duplicates';
 };
 
@@ -173,6 +173,23 @@ subtest 'Bread::Board-like DI' => sub {
             };
     } qr(^resource '\w+': dependency 'foo'.*format), "bad new() parameter spec (3)";
 };
+
+subtest 'require modules' => sub {
+    throws_ok {
+        resource req_1 =>
+            require         => {},
+            init            => sub {};
+    } qr(^resource '\w+': 'require' .*module name.*list), "bad require type";
+
+    throws_ok {
+        resource req_2 =>
+            require         => [ '-foo', 42 ],
+            init            => sub {};
+    } qr(^resource '\w+': 'require'), "bad module names";
+};
+
+is_deeply [ silo->ctl->meta->list ], [ 'dup' ]
+    , "no reqources except duplicate present";
 
 done_testing;
 

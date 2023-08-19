@@ -285,6 +285,13 @@ Is roughly equivalent to:
             );
         };
 
+=head3 require => 'Module::Name' || \@module_list
+
+Load module(s) specified before calling the initializer.
+
+This is exactly the same as calling require 'Module::Name' in the initializer
+itself except that it's more explicit.
+
 =head2 silo
 
 A re-exportable singleton function returning
@@ -434,7 +441,7 @@ Compatibility issues are being slowly worked on.
 
 =head1 MORE EXAMPLES
 
-=head2 Normal operation
+=head2 Resources with just the init
 
     package My::App;
     use Resource::Silo;
@@ -459,26 +466,25 @@ Compatibility issues are being slowly worked on.
         # set your custom UserAgent header or SSL certificate(s) here
     };
 
-Note that lazy-loading the modules is not necessary,
-but it may speed up loading support scripts.
+Note that though lazy-loading the modules is not necessary,
+it may speed up loading support scripts.
 
 =head2 Resources with extra options
 
     resource logger =>
-        cleanup_order     => 9e9,     # destroy as late as possible
-        init              => sub {
-            require Log::Any;
-            require Log::Any::Adapter;
+        cleanup_order   => 9e9,     # destroy as late as possible
+        require         => [ 'Log::Any', 'Log::Any::Adapter' ],
+        init            => sub {
             Log::Any::Adapter->set( 'Stderr' );
             # your rsyslog config could be here
             Log::Any->get_logger;
         };
 
     resource schema =>
-        derivative        => 1,        # merely a frontend to dbi
-        init              => sub {
+        derivative      => 1,        # merely a frontend to dbi
+        require         => 'My::App::Schema',
+        init            => sub {
             my $self = shift;
-            require My::App::Schema;
             return My::App::Schema->connect( sub { $self->dbh } );
         };
 
@@ -507,18 +513,16 @@ A more pragmatic one:
     package My::App;
     use Resource::Silo;
 
-    use Redis;
-    use Redis::Namespace;
-
     my %known_namespaces = (
         lock    => 1,
         session => 1,
         user    => 1,
     );
 
-    resource redis =>
-        argument      => sub { $known_namespaces{ $_ } },
-        init          => sub {
+    resource redis  =>
+        argument        => sub { $known_namespaces{ $_ } },
+        require         => 'Redis::Namespace',
+        init            => sub {
             my ($self, $name, $ns) = @_;
             Redis::Namespace->new(
                 redis     => $self->redis,
@@ -528,6 +532,7 @@ A more pragmatic one:
 
     resource redis_conn => sub {
         my $self = shift;
+        require Redis;
         Redis->new( server => $self->config->{redis} );
     };
 

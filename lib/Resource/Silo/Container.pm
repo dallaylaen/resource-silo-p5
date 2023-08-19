@@ -25,6 +25,7 @@ as well as a doorway into a fine-grained control interface.
 
 use Carp;
 use Scalar::Util qw( blessed refaddr reftype weaken );
+use Module::Load qw( load );
 
 my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
 
@@ -152,6 +153,11 @@ sub _instantiate_resource {
     };
     local $self->{-pending}{$key} = 1;
 
+    foreach my $mod (@{ $spec->{require} }) {
+        local $@;
+        eval { load $mod; 1; }
+            or croak "Failed to load '$mod' via resource '$name': $@";
+    };
     ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg);
 };
 
