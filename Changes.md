@@ -1,5 +1,9 @@
 # Revision history for Resource::Silo
 
+- 0.06    Sat Aug 19 2023
+    - [api] Add silo->ctl->meta->self_check to test that the setup is correct (deps+modules so far)
+    - [api] Add 'require' option to preload modules like 'class' does
+
 - 0.05    Sat Aug 19 2023
     - [test] Make sure tests work on windows (quotemeta \)
     - [doc] Add more examples to doc
