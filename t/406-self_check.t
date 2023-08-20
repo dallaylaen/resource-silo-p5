@@ -43,7 +43,7 @@ subtest 'unloadable modules' => sub {
 
     throws_ok {
         Bad::Mods->new->ctl->meta->self_check;
-    } qr(resource 'foo': .*load.* 'My::Module'), "imcomplete dependencies = no go";
+    } qr(resource 'foo': .*load.* 'My::Module'), "can't load modules = no go";
 };
 
 done_testing;

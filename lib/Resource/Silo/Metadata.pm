@@ -275,16 +275,9 @@ sub self_check {
             join ", ", map { "'$_'" } @missing_deps
                 if @missing_deps;
 
-        local $@;
-        my $mod;
-        eval {
-            foreach ( @{ $entry->{require} } ) {
-                $mod = $_;
-                load $mod;
-            };
-            1;
-        } || do {
-            croak "resource '$name': failed to load required module '$mod': $@";
+        foreach my $mod ( @{ $entry->{require} } ) {
+            eval { load $mod; 1 }
+                or croak "resource '$name': failed to load '$mod': $@";
         };
     };
 

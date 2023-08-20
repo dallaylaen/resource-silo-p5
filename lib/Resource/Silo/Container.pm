@@ -154,9 +154,8 @@ sub _instantiate_resource {
     local $self->{-pending}{$key} = 1;
 
     foreach my $mod (@{ $spec->{require} }) {
-        local $@;
-        eval { load $mod; 1; }
-            or croak "Failed to load '$mod' via resource '$name': $@";
+        eval { load $mod; 1 }
+            or croak "resource '$name': failed to load '$mod': $@";
     };
     ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg)
         // croak "Fetching resource '$key' failed for no apparent reason";
