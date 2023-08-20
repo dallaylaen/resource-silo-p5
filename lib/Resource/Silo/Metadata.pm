@@ -270,7 +270,7 @@ sub self_check {
     foreach my $name (sort keys %$res) {
         my $entry = $res->{$name};
 
-        my @missing_deps = grep { !$res->{$_} } keys %{ $entry->{allowdeps} };
+        my @missing_deps = grep { !$res->{$_} } keys %{ $entry->{allowdeps} || {} };
         croak "resource '$name': missing dependencies: ".
             join ", ", map { "'$_'" } @missing_deps
                 if @missing_deps;
