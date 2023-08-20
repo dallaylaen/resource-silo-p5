@@ -11,6 +11,25 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
+subtest 'no problem' => sub {
+    lives_ok {
+        package All::Good;
+        use Resource::Silo -class;
+
+        resource foo    =>
+            require         => [ 'Test::More' ],
+            dependencies    => [ 'bar' ],
+            init            => sub { 42 };
+
+        resource bar    =>
+            init            => sub {};
+    } "defining a valid setup works";
+
+    lives_ok {
+        All::Good->new->ctl->meta->self_check;
+    } "setup was actually good";
+};
+
 subtest 'bad dependencies' => sub {
     lives_ok {
         package Bad::Deps;
