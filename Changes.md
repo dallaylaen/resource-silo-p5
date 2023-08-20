@@ -1,5 +1,10 @@
 # Revision history for Resource::Silo
 
+- 0.07    Sun Aug 20 2023
+    - [api] Returning `undef` from initializer is now considered an error
+    - [bug] Fix throwing on module load failure in lower perl versions
+    - [bug] self_check caused empty dependencies list to appear due to autovivification
+
 - 0.06    Sat Aug 19 2023
     - [api] Add silo->ctl->meta->self_check to test that the setup is correct (deps+modules so far)
     - [api] Add 'require' option to preload modules like 'class' does
