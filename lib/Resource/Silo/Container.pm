@@ -158,7 +158,8 @@ sub _instantiate_resource {
         eval { load $mod; 1; }
             or croak "Failed to load '$mod' via resource '$name': $@";
     };
-    ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg);
+    ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg)
+        // croak "Fetching resource '$key' failed for no apparent reason";
 };
 
 # use instead of delete $self->{-cache}{$name}
