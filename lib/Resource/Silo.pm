@@ -130,10 +130,18 @@ by default;
 
 =head3 init => sub { $self, $name, [$argument] }
 
-A coderef to obtain the resource. Required.
+A coderef to obtain the resource.
+Required, unless C<literal> or C<class> are specified.
 
 If the number of arguments is odd,
 the last one is popped and considered to be the init function.
+
+=head3 literal => $value
+
+Replace initializer with C<sub { $value }>.
+
+In addition, C<derived> flag is set,
+and an empty C<dependencies> list is implied.
 
 =head3 argument => C<sub { ... }> || C<qr( ... )>
 

@@ -63,6 +63,7 @@ my %known_args = (
     fork_cleanup    => 1,
     ignore_cache    => 1,
     init            => 1,
+    literal         => 1,
     preload         => 1,
     require         => 1,
 );
@@ -98,6 +99,15 @@ sub add {
         croak "resource '$name': 'require' doesn't look like module name(s): "
             .join ", ", map { "'$_'" } @bad
                 if @bad;
+    };
+
+    if (defined (my $value = $spec{literal})) {
+        defined $spec{$_}
+            and croak "resource '$name': 'literal' is incompatible with '$_'"
+                for qw( init class argument );
+        $spec{init} = sub { $value };
+        $spec{dependencies} //= [];
+        $spec{derived}      //= 1;
     };
 
     _make_init_class($self, $name, \%spec)

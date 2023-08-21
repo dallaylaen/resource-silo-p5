@@ -188,6 +188,21 @@ subtest 'require modules' => sub {
     } qr(^resource '\w+': 'require'), "bad module names";
 };
 
+subtest 'literal' => sub {
+    throws_ok {
+        resource const_1 =>
+            literal         => 42,
+            init            => sub { 'foo' };
+    } qr(^resource '\w+': 'literal'.*incompatible.*'init'), "literal + init = no go";
+
+    throws_ok {
+        resource const_1 =>
+            literal         => 42,
+            class           => 'Foo::Bar',
+            dependencies    => {};
+    } qr(^resource '\w+': 'literal'.*incompatible.*'class'), "literal + init = no go";
+};
+
 is_deeply [ silo->ctl->meta->list ], [ 'dup' ]
     , "no reqources except duplicate present";
 
