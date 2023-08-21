@@ -1,5 +1,9 @@
 # Revision history for Resource::Silo
 
+- 0.08    Mon Aug 21 2023
+    - [api] Add 'literal' resources that just point to a value
+    - [api][break] rename flag: derivative => derived
+
 - 0.07    Sun Aug 20 2023
     - [api] Returning `undef` from initializer is now considered an error
     - [bug] Fix throwing on module load failure in lower perl versions
