@@ -76,7 +76,7 @@ Resources with more options:
         init              => sub { ... };
 
     resource schema =>
-        derivative        => 1,        # merely a frontend to its dependencies
+        derived           => 1,        # merely a frontend to its dependencies
         init              => sub {
             my $self = shift;
             require My::App::Schema;

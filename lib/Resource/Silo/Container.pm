@@ -138,7 +138,7 @@ sub _instantiate_resource {
         if $self->{-cleanup};
     croak "Attempting to initialize resource '$name' in locked mode"
         if $self->{-locked}
-            and !$spec->{derivative}
+            and !$spec->{derived}
             and !$self->{-override}{$name};
 
     croak "Attempting to fetch unexpected dependency '$name'"
@@ -309,7 +309,7 @@ sub override {
 Forbid initializing new resources.
 
 The cached ones instantiated so far, the ones that have been overridden,
-and the ones with the C<derivative> flag will still be returned.
+and the ones with the C<derived> flag will still be returned.
 
 =cut
 

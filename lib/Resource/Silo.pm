@@ -172,10 +172,13 @@ Example:
             );
         };
 
-=head3 derivative => 1 | 0
+=head3 derived => 1 | 0
 
 Assume that resource can be derived from its dependencies,
 or that it introduces no extra side effects compared to them.
+
+This also naturally applies to resources with pure initializers,
+i.e. those having no dependencies and adding no side effects on top.
 
 Examples may be L<Redis::Namespace> built on top of a L<Redis> handle
 or L<DBIx::Class> built on top of L<DBI> connection.
@@ -378,7 +381,7 @@ The resources already in cache will still be OK though.
 The C<override> method allows to supply substitutes for resources or
 their initializers.
 
-The C<derivative> flag in the resource definition may be used to indicate
+The C<derived> flag in the resource definition may be used to indicate
 that a resource is safe to instantiate as long as its dependencies are
 either instantiated or mocked, e.g. a L<DBIx::Class> schema is probably fine
 as long as the underlying database connection is taken care of.
@@ -481,7 +484,7 @@ it may speed up loading support scripts.
         };
 
     resource schema =>
-        derivative      => 1,        # merely a frontend to dbi
+        derived         => 1,        # merely a frontend to dbi
         require         => 'My::App::Schema',
         init            => sub {
             my $self = shift;
