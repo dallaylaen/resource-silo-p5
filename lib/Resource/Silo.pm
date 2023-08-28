@@ -149,6 +149,8 @@ If specified, assume that the resource in question may have several instances,
 distinguished by a string argument. Such argument will be passed as the 3rd
 parameter to the C<init> function.
 
+Only one resource instance will be cached per argument value.
+
 This may be useful e.g. for L<DBIx::Class> result sets,
 or for L<Redis::Namespace>.
 
@@ -157,28 +159,7 @@ A function must return true for the parameter to be valid.
 
 If the argument is omitted, it is assumed to be an empty string.
 
-Example:
-
-    use Resource::Silo;
-    use Redis;
-    use Redis::Namespace;
-
-    resource real_redis => sub { Redis->new };
-
-    my %known_namespaces = (
-        users    => 1,
-        sessions => 1,
-        counters => 1,
-    );
-
-    resource redis => argument => sub { $known_namespaces{ +shift } },
-        init => sub {
-            my ($self, $name, $ns) = @_;
-            Redis::Namespace->new(
-                redis     => $self->real_redis,
-                namespace => $ns,
-            );
-        };
+See L<MORE EXAMPLES> below.
 
 =head3 derived => 1 | 0
 
@@ -543,6 +524,12 @@ A more pragmatic one:
     package My::App;
     use Resource::Silo;
 
+    resource redis_conn => sub {
+        my $self = shift;
+        require Redis;
+        Redis->new( server => $self->config->{redis} );
+    };
+
     my %known_namespaces = (
         lock    => 1,
         session => 1,
@@ -559,12 +546,6 @@ A more pragmatic one:
                 namespace => $ns,
             );
         };
-
-    resource redis_conn => sub {
-        my $self = shift;
-        require Redis;
-        Redis->new( server => $self->config->{redis} );
-    };
 
     # later in the code
     silo->redis;            # nope!
