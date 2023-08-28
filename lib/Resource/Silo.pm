@@ -238,10 +238,29 @@ This may be useful if cleanup is destructive and shouldn't be performed twice.
 
 =head3 dependencies => \@list
 
-If specified, only allow resources from the list to be fetched
-in the initializer.
+List other resources that may be requested in the initializer.
+Unless C<loose_deps> is specified (see below),
+the dependencies I<must> be declared I<before> the dependant.
 
-This parameter has a different meaning if C<class> parameter is in use (see below).
+A resource with parameter may also depend on itself.
+
+The default is all eligible resources known so far.
+
+B<NOTE> This behavior was different prior to v.0.09
+and may be change again in the near future.
+
+This parameter has a different structure
+if C<class> parameter is in action (see below).
+
+=head3 loose_deps => 1|0
+
+Allow dependencies that have not been declared yet.
+
+Not specifying the C<dependencies> parameter would now mean
+there are no restrictions whatsoever.
+
+B<NOTE> Having to resort to this flag may be
+a sign of a deeper architectural problem.
 
 =head3 class => 'Class::Name'
 
@@ -594,7 +613,11 @@ That was a great time and I had great coworkers!
 
 =head1 BUGS
 
-Please report any bugs or feature requests to
+This software is still in beta stage. Its interface is still evolving.
+
+Version 0.09 brings a breaking change that forbids forward dependencies.
+
+Please report bug reports and feature requests to
 L<https://github.com/dallaylaen/resource-silo-p5/issues>
 or via RT:
 L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Resource-Silo>.
