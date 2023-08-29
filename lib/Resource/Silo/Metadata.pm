@@ -135,6 +135,7 @@ sub add {
                 .join( ", ", map { "'$_'" } @fwd)
                     if @fwd;
         } else {
+            $spec{autodeps}  = 1;
             $spec{allowdeps} = {
                 map { $_ => 1 } keys %{ $self->{resource} },
             };
