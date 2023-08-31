@@ -143,7 +143,6 @@ sub _instantiate_resource {
 
     self->_unexpected_dependency($name)
         if ($self->{-allow} && !$self->{-allow}{$name});
- ;
 
     # Detect circular dependencies
     my $key = $name . (length $arg ? "\@$arg" : '');
