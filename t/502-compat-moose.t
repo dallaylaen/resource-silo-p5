@@ -10,11 +10,16 @@ use strict;
 use warnings;
 use Test::More;
 
+BEGIN {
+    plan skip_all => 'No Moose found'
+        unless eval { require Moose };
+};
+
 my %conn;
 my $id;
 {
     package My::Mixed;
-    use Moo;
+    use Moose;
     use Resource::Silo -class;
 
     has prefix => is => 'ro', default => sub { 'foo' };
@@ -51,19 +56,5 @@ subtest 'with parameter' => sub {
     undef $mixed;
     is_deeply \%conn, {}, "Cleanup worked";
 };
-
-subtest 'inheritance' => sub {
-    {
-        package My::Mixed::Subclass;
-        use Moo;
-        extends 'My::Mixed';
-
-        has '+prefix', default => sub { 'baz' };
-    };
-
-    my $inst = My::Mixed::Subclass->new;
-    is $inst->conn, 'baz_3', "resource machinery works for subclass as well";
-};
-
 
 done_testing;

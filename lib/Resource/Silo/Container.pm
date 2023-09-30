@@ -23,6 +23,7 @@ as well as a doorway into a fine-grained control interface.
 
 =cut
 
+use Moo;
 use Carp;
 use Scalar::Util qw( blessed refaddr reftype weaken );
 use Module::Load qw( load );
@@ -42,30 +43,23 @@ L</override> method (see below).
 # please make sure all internal fields start with a hyphen ("-").
 
 my %active_instances;
-my $not_once = \%Resource::Silo::metadata; # avoid once warning
 
-sub new {
-    my $class = shift;
-    $class = ref $class if blessed $class;
+sub BUILD {
+    my ($self, $args) = @_;
 
-    my $spec = $Resource::Silo::metadata{$class}
-        or croak "Failed to locate \$Resource::Silo::metadata for class $class";
+    my $spec = $Resource::Silo::metadata{ref $self}
+        // _rs_get_metadata($self);
 
-    my $self = bless {
-        -pid  => $$,
-        -spec => $spec,
-    }, $class;
-    if (@_) {
-        croak "Odd number of additional arguments in new()"
-            if @_ % 2;
-        $self->_override_resources({ @_ });
-    };
+    $self->{-spec} = $spec;
+    $self->{-pid} = $$;
+
+    $self->_override_resources($args);
+
     $active_instances{ refaddr $self } = $self;
     weaken $active_instances{ refaddr $self };
-    return $self;
 };
 
-sub DESTROY {
+sub DEMOLISH {
     my $self = shift;
     delete $active_instances{ refaddr $self };
     $self->ctl->cleanup;
@@ -78,6 +72,21 @@ END {
         next unless $container;
         $container->ctl->cleanup;
     };
+};
+
+sub _rs_get_metadata {
+    my $self = shift;
+    my $class = ref $self;
+
+    my @queue = $class;
+    while (defined( my $next = shift @queue )) {
+        my $meta = $Resource::Silo::metadata{$next};
+        return $meta if $meta;
+        no strict 'refs'; ## no critic strictures
+        push @queue, @{ "${next}::ISA" };
+    };
+
+    croak "Failed to locate \$Resource::Silo::metadata for class $class";
 };
 
 =head2 C<ctl>
