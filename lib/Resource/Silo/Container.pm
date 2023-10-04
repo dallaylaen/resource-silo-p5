@@ -27,6 +27,7 @@ use Moo;
 use Carp;
 use Scalar::Util qw( blessed refaddr reftype weaken );
 use Module::Load qw( load );
+use namespace::clean;
 
 my $ID_REX = qr/^[a-z][a-z_0-9]*$/i;
 
