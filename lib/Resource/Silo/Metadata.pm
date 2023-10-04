@@ -188,7 +188,7 @@ sub add {
     {
         no strict 'refs'; ## no critic Strictures
         *{"${target}::$name"} =
-            Resource::Silo::Container::_make_resource_accessor($name, \%spec);
+            Resource::Silo::Container::_silo_make_accessor($name, \%spec);
     }
 
     return $self;
