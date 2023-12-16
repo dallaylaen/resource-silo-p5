@@ -140,7 +140,7 @@ sub _silo_instantiate_res {
         if ($self->{-allow} && !$self->{-allow}{$name});
 
     # Detect circular dependencies
-    my $key = $name . (length $arg ? "\@$arg" : '');
+    my $key = $name . (length $arg ? "/$arg" : '');
     if ($self->{-pending}{$key}) {
         my $loop = join ', ', sort keys %{ $self->{-pending} };
         croak "Circular dependency detected for resource $key: {$loop}";
@@ -441,6 +441,26 @@ architectural problem.
 
 sub fresh {
     return ${+shift}->_silo_instantiate_res(@_);
+};
+
+=head2 list_cached
+
+Return list of services that are currently present in the cache as strings
+of form C<$service_name> or C<$service_name/$argument> if argument is present.
+
+Useful for debugging.
+
+=cut
+
+sub list_cached {
+    my $cache = ${+shift}->{-cache};
+    my @out;
+    foreach my $service (sort keys %$cache) {
+        foreach my $arg (sort keys %{ $cache->{$service} }) {
+            push @out, length $arg ? "$service/$arg" : $service;
+        };
+    };
+    return wantarray ? @out : \@out;
 };
 
 =head2 meta
