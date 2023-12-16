@@ -158,7 +158,7 @@ sub _silo_instantiate_res {
     local $self->{-allow} = $spec->{allowdeps};
 
     ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg)
-        // croak "Instantiating resource '$key' failed for no apparent reason";
+        // croak "Instantiating resource '$key' $spec->{origin} failed for no apparent reason";
 };
 
 # use instead of delete $self->{-cache}{$name}

@@ -180,7 +180,7 @@ sub add {
     };
 
     $spec{origin} = Carp::shortmess("declared");
-    $spec{origin} =~ s/\s+$//s;
+    $spec{origin} =~ s/\D+$//s;
     $self->{resource}{$name} = \%spec;
 
     # Move code generation into Resource::Silo::Container
