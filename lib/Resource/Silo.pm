@@ -12,84 +12,110 @@ Resource::Silo - lazy declarative resource container for Perl.
 
 =head1 DESCRIPTION
 
-We assume the following setup:
+This module provides a container that manages initialization, caching, and
+cleanup of resources that the application needs to talk to the outside world,
+such as configuration files, database connections, queues,
+external service endpoints, and so on.
 
-=over
+Upon use, a one-off container class based on L<Resource::Silo::Container>
+with a one-and-true (but not only) instance is created.
 
-=item * The application needs to access multiple resources, such as
-configuration files, databases, queues, service endpoints, credentials, etc.
+The resources are then defined using a L<Moose>-like DSL,
+and their identifiers become method names in said class.
+Apart from a name, each resource defined an initialization routine,
+and optionally dependencies, cleanup routine, and various flags.
 
-=item * The application has helper scripts that don't need to initialize
-all the resources at once, as well as a test suite where accessing resources
-is undesirable unless a fixture or mock is provided.
-
-=item * The resource management has to be decoupled from the application
-logic where possible.
-
-=back
-
-And we propose the following solution:
-
-=over
-
-=item * All available resources are declared in one place
-and encapsulated within a single container.
-
-=item * Such container is equipped with methods to access resources,
-as well as an exportable prototyped function for obtaining the one and true
-instance of it (a.k.a. optional singleton).
-
-=item * Every class or script in the project accesses resources
-through this container and only through it.
-
-=back
+Resources are instantiated on demand and cached.
+The container is fork-aware and will reset its cache
+whenever the process ID changes.
 
 =head1 SYNOPSIS
 
-The default mode is to create a one-off container for all resources
-and export if into the calling class via C<silo> function.
+Declaring the resources:
 
     package My::App;
+
+    # This creates 'resource' and 'silo' functions
+    # and *also* makes 'silo' re-exportable via Exporter
     use Resource::Silo;
 
-    use DBI;
-    use YAML::LoadFile;
-    ...
+    # A literal resource, that is, initialized with a constant value
+    resource config_file =>
+        literal => '/etc/myapp/myapp.yaml';
 
-    resource config => sub { LoadFile( ... ) };
-    resource dbh    => sub {
-        my $self = shift;
-        my $conf = $self->config->{dbh};
-        DBI->connect( $conf->{dsn}, $conf->{user}, $conf->{pass}, { RaiseError => 1 } );
-    };
-    resource queue  => sub { My::Queue->new( ... ) };
-    ...
+    # A typical resource with a lazy-loaded module
+    resource config =>
+        require => 'YAML::XS',
+        init    => sub {
+            my $self = shift;
+            YAML::XS::LoadFile( $self->config_file );
+        };
 
-    my $statement = silo->dbh->prepare( $sql );
-    my $queue = silo->queue;
+    # Derived resource is a front end to other resources
+    # without side effects of its own.
+    resource app_name =>
+        derived => 1,
+        init    => sub { $_[0]->config->{name} };
 
-For more complicated projects, it may make more sense
-to create a dedicated class for resource management:
+    # This is how a typical DBI declaration would look like
+    resource dbh =>
+        require      => 'DBI',
+        dependencies => [ 'config' ],
+        init         => sub {
+            my $self = shift;
+            my $config = $self->config->{database};
+            DBI->connect(
+                $config->{dsn},
+                $config->{username},
+                $config->{password},
+                { RaiseError => 1 }
+            );
+        };
 
-    # in the container class
-    package My::Project::Res;
-    use Resource::Silo -class;      # resource definitions will now create
-                                    # eponymous methods in My::Project::Res
+    # A full-blown Spring style dependency injection
+    resource myclass =>
+        derived => 1,
+        class   => 'My::App::Class',  # call My::App::Class->new
+        dependencies => {
+            dbh => 1,                 # pass 'dbh' resource to new()
+            name => 'app_name',       # set 'name' parameter to 'app_name' resource
+        };
 
-    resource foo => sub { ... };    # declare resources as in the above example
-    resource bar => sub { ... };
+Accessing the resources in the app itself:
 
-    1;
+    use My::App qw(silo);
 
-    # in all other modules/packages/scripts:
+    my $app = silo->myclass; # this will initialize all the dependencies
+    $app->frobnicate;
 
-    package My::Project;
-    use My::Project::Res qw(silo);
+Partial resource usage and fine-grained control,
+e.g. in a maintenance script:
 
-    silo->foo;                      # obtain resources
-    silo->bar;
+    use 5.010;
+    use My::App qw(silo);
 
-    My::Project::Res->new;          # separate empty resource container
+    # Override a resource with something else
+    silo->ctl->override( config => shift );
+
+    # This will derive a database connection from the given configuration file
+    my $dbh = silo->dbh;
+
+    say $dbh->selectall_arrayref('SELECT * FROM users')->[0][0];
+
+Writing tests:
+
+    use Test::More;
+    use My::All qw(silo);
+
+    # replace side effect with mocks
+    silo->ctl->override( config => $config_hash, dbh => $local_sqlite );
+
+    # make sure no other side effects will ever be triggered
+    # (unless 'derived' flag is set or resource is a literal)
+    silo->ctl->lock;
+
+    my $app = silo->myclass;
+    # run actual tests below
 
 =head1 EXPORT
 
@@ -98,28 +124,29 @@ unconditionally:
 
 =over
 
-=item * silo - a singleton function returning the resource container.
-Note that this function will be created separately for every calling module,
-and needs to be re-exported to be shared.
+=item * silo - a re-exportable prototyped function
+that returning the one and true container instance.
 
-=item * resource - a DSL for defining resources, their initialization
-and properties. See below.
+=item * resource - front end to resource declaration DSL.
 
 =back
 
-Additionally, if the C<-class> argument was added to the use line,
-the following things happen:
+Additionally, L<Exporter> is added to the calling package's C<@ISA>
+and C<silo> is appended to C<our @EXPORT>.
 
-=over
+B<NOTE> If the module has other exported functions, they should be added
+via
 
-=item * L<Resource::Silo::Container> and L<Exporter> are added to C<@ISA>;
+    push our @EXPORT, qw( foo bar quux );
 
-=item * C<silo> function is added to C<@EXPORT> and thus becomes re-exported
-by default;
+or else the C<silo> function in that array will be overwritten.
 
-=item * calling C<resource> creates a corresponding method in this package.
+=head2 -class option
 
-=back
+If a C<-class> argument is given on the use line,
+the calling package will itself become the container class.
+
+=head1 FUNCTIONS
 
 =head2 resource
 
@@ -451,8 +478,8 @@ both L<Moo> and L<Moose> when in C<-class> mode:
     };
 
 Extending such mixed classes will also work.
-However, the resource definitions will be taken
-from the nearest ancestor that has them, using breadth first search.
+However, as of current, the resource definitions will be taken
+from the nearest ancestor that has any, using breadth first search.
 
 =head1 MORE EXAMPLES
 
@@ -633,7 +660,7 @@ L<https://metacpan.org/release/Resource-Silo>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
+Copyright (c) 2023-2024, Konstantin Uvarin, C<< <khedin@gmail.com> >>
 
 This program is free software.
 You can redistribute it and/or modify it under the terms of either:
