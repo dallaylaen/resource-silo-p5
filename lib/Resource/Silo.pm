@@ -6,6 +6,58 @@ use warnings;
 
 our $VERSION = '0.11';
 
+use Carp;
+use Exporter;
+use Scalar::Util qw( set_prototype );
+
+use Resource::Silo::Metadata;
+use Resource::Silo::Container;
+
+# Store definitions here
+our %metadata;
+
+sub import {
+    my ($self, @param) = @_;
+    my $caller = caller;
+    my $target;
+
+    while (@param) {
+        my $flag = shift @param;
+        if ($flag eq '-class') {
+            $target = $caller;
+        } else {
+            # TODO if there's more than 3 elsifs, use jump table instead
+            croak "Unexpected parameter to 'use $self': '$flag'";
+        };
+    };
+
+    $target ||= __PACKAGE__."::container::".$caller;
+
+    my $spec = Resource::Silo::Metadata->new($target);
+    $metadata{$target} = $spec;
+
+    my $instance;
+    my $silo = set_prototype {
+        # cannot instantiate target until the package is fully defined,
+        # thus go lazy
+        $instance //= $target->new;
+    } '';
+
+    no strict 'refs'; ## no critic
+    no warnings 'redefine', 'once'; ## no critic
+
+    push @{"${target}::ISA"}, 'Resource::Silo::Container';
+
+    push @{"${caller}::ISA"}, 'Exporter';
+    push @{"${caller}::EXPORT"}, qw(silo);
+    *{"${caller}::resource"} = $spec->_make_dsl;
+    *{"${caller}::silo"}     = $silo;
+};
+
+1; # End of Resource::Silo
+
+__END__
+
 =head1 NAME
 
 Resource::Silo - lazy declarative resource container for Perl.
@@ -57,9 +109,9 @@ Declaring the resources:
         derived => 1,
         init    => sub { $_[0]->config->{name} };
 
-    # This is how a typical DBI declaration would look like
+    # An RDBMS connection is one of the most expected things here
     resource dbh =>
-        require      => 'DBI',
+        require      => [ 'DBI' ],      # loading multiple modules is fine
         dependencies => [ 'config' ],
         init         => sub {
             my $self = shift;
@@ -79,6 +131,7 @@ Declaring the resources:
         dependencies => {
             dbh => 1,                 # pass 'dbh' resource to new()
             name => 'app_name',       # set 'name' parameter to 'app_name' resource
+            version => \3.14,         # pass a literal value
         };
 
 Accessing the resources in the app itself:
@@ -344,56 +397,6 @@ I<This is done on purpose so that multiple projects or modules can coexist
 within the same interpreter without interference.>
 
 C<silo-E<gt>new> will create a new instance of the I<same> container class.
-
-=cut
-
-use Carp;
-use Exporter;
-use Scalar::Util qw( set_prototype );
-
-use Resource::Silo::Metadata;
-use Resource::Silo::Container;
-
-# Store definitions here
-our %metadata;
-
-sub import {
-    my ($self, @param) = @_;
-    my $caller = caller;
-    my $target;
-
-    while (@param) {
-        my $flag = shift @param;
-        if ($flag eq '-class') {
-            $target = $caller;
-        } else {
-            # TODO if there's more than 3 elsifs, use jump table instead
-            croak "Unexpected parameter to 'use $self': '$flag'";
-        };
-    };
-
-    $target ||= __PACKAGE__."::container::".$caller;
-
-    my $spec = Resource::Silo::Metadata->new($target);
-    $metadata{$target} = $spec;
-
-    my $instance;
-    my $silo = set_prototype {
-        # cannot instantiate target until the package is fully defined,
-        # thus go lazy
-        $instance //= $target->new;
-    } '';
-
-    no strict 'refs'; ## no critic
-    no warnings 'redefine', 'once'; ## no critic
-
-    push @{"${target}::ISA"}, 'Resource::Silo::Container';
-
-    push @{"${caller}::ISA"}, 'Exporter';
-    push @{"${caller}::EXPORT"}, qw(silo);
-    *{"${caller}::resource"} = $spec->_make_dsl;
-    *{"${caller}::silo"}     = $silo;
-};
 
 =head1 TESTING: LOCK AND OVERRIDES
 
@@ -670,5 +673,3 @@ or the Artistic License.
 See L<http://dev.perl.org/licenses/> for more information.
 
 =cut
-
-1; # End of Resource::Silo
