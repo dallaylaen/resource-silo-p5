@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.12';
+our $VERSION = '0.1200_01';
 
 use Carp;
 use Exporter;
