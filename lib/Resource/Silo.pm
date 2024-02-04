@@ -20,11 +20,16 @@ sub import {
     my ($self, @param) = @_;
     my $caller = caller;
     my $target;
+    my $shortcut = "silo";
 
     while (@param) {
         my $flag = shift @param;
         if ($flag eq '-class') {
             $target = $caller;
+        } elsif ($flag eq '-shortcut') {
+            $shortcut = shift @param;
+            croak "-shortcut must be an identifier"
+                unless $shortcut and !ref $shortcut and $shortcut =~ /^[a-z_][a-z_0-9]*$/i;
         } else {
             # TODO if there's more than 3 elsifs, use jump table instead
             croak "Unexpected parameter to 'use $self': '$flag'";
@@ -49,9 +54,9 @@ sub import {
     push @{"${target}::ISA"}, 'Resource::Silo::Container';
 
     push @{"${caller}::ISA"}, 'Exporter';
-    push @{"${caller}::EXPORT"}, qw(silo);
+    push @{"${caller}::EXPORT"}, $shortcut;
     *{"${caller}::resource"} = $spec->_make_dsl;
-    *{"${caller}::silo"}     = $silo;
+    *{"${caller}::$shortcut"}     = $silo;
 };
 
 1; # End of Resource::Silo
@@ -203,6 +208,11 @@ the calling package will itself become the container class.
 
 Such a class may have normal fields and methods in addition to resources
 and will also be L<Moose>- and L<Moo>-compatible.
+
+=head3 -shortcut <function name>
+
+If specified, use that name for singleton instance instead of C<silo>.
+Name must be a valid identifier, i.e. C</[a-z_][a-z_0-9]*/i>.
 
 =head2 resource
 
