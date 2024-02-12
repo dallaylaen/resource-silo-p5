@@ -158,7 +158,7 @@ e.g. in a maintenance script:
     # This will derive a database connection from the given configuration file
     my $dbh = silo->dbh;
 
-    say $dbh->selectall_arrayref('SELECT * FROM users')->[0][0];
+    say $dbh->selectall_arrayref('SELECT count(*) FROM users')->[0][0];
 
 Writing tests:
 
@@ -610,10 +610,14 @@ L<Bread::Board> - a more mature IoC / DI framework.
 
 This software is still in beta stage. Its interface is still evolving.
 
-Version 0.09 brings a breaking change that forbids forward dependencies.
+=over
 
-Forced re-exporting of C<silo> was probably a bad idea
+=item * Version 0.09 brings a breaking change that forbids forward dependencies.
+
+=item * Forced re-exporting of C<silo> was probably a bad idea
 and should have been left as an exercise to the user.
+
+=back
 
 Please report bug reports and feature requests to
 L<https://github.com/dallaylaen/resource-silo-p5/issues>
