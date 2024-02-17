@@ -251,136 +251,10 @@ Replaces initializer with C<sub { $value }>.
 In addition, C<derived> flag is set,
 and an empty C<dependencies> list is implied.
 
-=head3 argument => C<sub { ... }> || C<qr( ... )>
-
-Declare a (possibly infinite) set of sibling resources under the same name,
-distinguished by a string parameter.
-Said parameter will be passed to the C<init> function.
-
-Exactly one resource instance will be cached per argument value.
-
-A regular expression will always be anchored to match I<the whole string>.
-A function must return true for the parameter to be valid.
-
-If the argument is omitted, it is assumed to be an empty string.
-
-E.g. when using L<Redis::Namespace>:
-
-    package My::App;
-    use Resource::Silo;
-
-    resource redis_server => sub { Redis->new() };
-
-    resource redis =>
-        require         => 'Redis::Namespace',
-        derived         => 1,
-        argument        => qr([\w:]*),
-        init            => sub {
-            my ($c, undef, $ns) = @_;
-            Redis::Namespace->new(
-                redis     => $c->redis_server,
-                namespace => $ns,
-            );
-        };
-
-=head3 derived => 1 | 0
-
-Assume the resource introduces no side effects
-apart from those already handled by its dependencies.
-
-This also naturally applies to resources with pure initializers,
-i.e. those having no dependencies and adding no side effects on top.
-
-Examples may be L<Redis::Namespace> built on top of a L<Redis> handle
-or L<DBIx::Class> built on top of L<DBI> connection.
-
-Derivative resources may be instantiated even in locked mode,
-as they would only initialize if their dependencies have already been
-either initialized, or overridden.
-
-See L<Resource::Silo::Container/lock>.
-
-=head3 ignore_cache => 1 | 0
-
-If set, don't cache resource, always create a fresh one instead.
-See also L<Resource::Silo::Container/fresh>.
-
-=head3 preload => 1 | 0
-
-If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
-Useful if you want to throw errors when a service is starting,
-not during request processing.
-
-See L<Resource::Silo::Container/preload>.
-
-=head3 cleanup => sub { $resource_instance }
-
-Undo the init procedure.
-Usually it is assumed that the resource will do it by itself in the destructor,
-e.g. that's what a L<DBI> connection would do.
-However, if it's not the case, or resources refer circularly to one another,
-a manual "destructor" may be specified.
-
-It only accepts the resource itself as an argument and will be called before
-erasing the object from the cache.
-
-See also C<fork_cleanup>.
-
-=head3 cleanup_order => $number
-
-The higher the number, the later the resource will get destroyed.
-
-The default is 0, negative numbers are also valid, if that makes sense for
-you application
-(e.g. destroy C<$my_service_main_object> before the resources it consumes).
-
-    resource logger =>
-        cleanup_order   => 9e9,     # destroy as late as possible
-        require         => [ 'Log::Any', 'Log::Any::Adapter' ],
-        init            => sub {
-            Log::Any::Adapter->set( 'Stderr' );
-            # your rsyslog config could be here
-            Log::Any->get_logger;
-        };
-
-=head3 fork_cleanup => sub { $resource_instance }
-
-If present, use this function in place of C<cleanup>
-if the process ID has changed.
-This may be useful if cleanup is destructive and shouldn't be performed twice.
-
-See L</FORKING>.
-
-=head3 dependencies => \@list
-
-List other resources that may be requested in the initializer.
-Unless C<loose_deps> is specified (see below),
-the dependencies I<must> be declared I<before> the dependant.
-
-A resource with parameter may also depend on itself.
-
-The default is all eligible resources known so far.
-
-B<NOTE> This behavior was different prior to v.0.09
-and may be change again in the near future.
-
-This parameter has a different structure
-if C<class> parameter is in action (see below).
-
-=head3 loose_deps => 1|0
-
-Allow dependencies that have not been declared yet.
-
-Not specifying the C<dependencies> parameter would now mean
-there are no restrictions whatsoever.
-
-B<NOTE> Having to resort to this flag may be
-a sign of a deeper architectural problem.
-
 =head3 class => 'Class::Name'
 
 Turn on Spring-style dependency injection.
-This forbids C<init> and C<argument> parameters
+This forbids the C<argument> parameter
 and requires C<dependencies> to be a hash.
 
 The dependencies' keys become the arguments to C<Class::Name-E<gt>new>,
@@ -436,6 +310,132 @@ Load module(s) specified before calling the initializer.
 
 This is exactly the same as calling require 'Module::Name' in the initializer
 itself except that it's more explicit.
+
+=head3 dependencies => \@list
+
+List other resources that may be requested in the initializer.
+Unless C<loose_deps> is specified (see below),
+the dependencies I<must> be declared I<before> the dependant.
+
+A resource with parameter may also depend on itself.
+
+The default is all eligible resources known so far.
+
+B<NOTE> This behavior was different prior to v.0.09
+and may be change again in the near future.
+
+This parameter has a different structure
+if C<class> parameter is in action (see below).
+
+=head3 loose_deps => 1|0
+
+Allow dependencies that have not been declared yet.
+
+Not specifying the C<dependencies> parameter would now mean
+there are no restrictions whatsoever.
+
+B<NOTE> Having to resort to this flag may be
+a sign of a deeper architectural problem.
+
+=head3 argument => C<sub { ... }> || C<qr( ... )>
+
+Declare a (possibly infinite) set of sibling resources under the same name,
+distinguished by a string parameter.
+Said parameter will be passed to the C<init> function.
+
+Exactly one resource instance will be cached per argument value.
+
+A regular expression will always be anchored to match I<the whole string>.
+A function must return true for the parameter to be valid.
+
+If the argument is omitted, it is assumed to be an empty string.
+
+E.g. when using L<Redis::Namespace>:
+
+    package My::App;
+    use Resource::Silo;
+
+    resource redis_server => sub { Redis->new() };
+
+    resource redis =>
+        require         => 'Redis::Namespace',
+        derived         => 1,
+        argument        => qr([\w:]*),
+        init            => sub {
+            my ($c, undef, $ns) = @_;
+            Redis::Namespace->new(
+                redis     => $c->redis_server,
+                namespace => $ns,
+            );
+        };
+
+=head3 cleanup => sub { $resource_instance }
+
+Undo the init procedure.
+Usually it is assumed that the resource will do it by itself in the destructor,
+e.g. that's what a L<DBI> connection would do.
+However, if it's not the case, or resources refer circularly to one another,
+a manual "destructor" may be specified.
+
+It only accepts the resource itself as an argument and will be called before
+erasing the object from the cache.
+
+See also C<fork_cleanup>.
+
+=head3 fork_cleanup => sub { $resource_instance }
+
+If present, use this function in place of C<cleanup>
+if the process ID has changed.
+This may be useful if cleanup is destructive and shouldn't be performed twice.
+
+See L</FORKING>.
+
+=head3 cleanup_order => $number
+
+The higher the number, the later the resource will get destroyed.
+
+The default is 0, negative numbers are also valid, if that makes sense for
+you application
+(e.g. destroy C<$my_service_main_object> before the resources it consumes).
+
+    resource logger =>
+        cleanup_order   => 9e9,     # destroy as late as possible
+        require         => [ 'Log::Any', 'Log::Any::Adapter' ],
+        init            => sub {
+            Log::Any::Adapter->set( 'Stderr' );
+            # your rsyslog config could be here
+            Log::Any->get_logger;
+        };
+
+=head3 derived => 1 | 0
+
+Assume the resource introduces no side effects
+apart from those already handled by its dependencies.
+
+This also naturally applies to resources with pure initializers,
+i.e. those having no dependencies and adding no side effects on top.
+
+Examples may be L<Redis::Namespace> built on top of a L<Redis> handle
+or L<DBIx::Class> built on top of L<DBI> connection.
+
+Derivative resources may be instantiated even in locked mode,
+as they would only initialize if their dependencies have already been
+either initialized, or overridden.
+
+See L<Resource::Silo::Container/lock>.
+
+=head3 ignore_cache => 1 | 0
+
+If set, don't cache resource, always create a fresh one instead.
+See also L<Resource::Silo::Container/fresh>.
+
+=head3 preload => 1 | 0
+
+If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
+Useful if you want to throw errors when a service is starting,
+not during request processing.
+
+See L<Resource::Silo::Container/preload>.
 
 =head2 silo
 
