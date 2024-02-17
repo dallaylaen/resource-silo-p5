@@ -304,6 +304,8 @@ Is roughly equivalent to:
             );
         };
 
+C<init>, C<literal>, and C<class> are mutually exclusive.
+
 =head3 require => 'Module::Name' || \@module_list
 
 Load module(s) specified before calling the initializer.
@@ -387,6 +389,8 @@ See also C<fork_cleanup>.
 If present, use this function in place of C<cleanup>
 if the process ID has changed.
 This may be useful if cleanup is destructive and shouldn't be performed twice.
+
+The default is same as C<cleanup>.
 
 See L</FORKING>.
 
