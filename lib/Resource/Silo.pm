@@ -75,11 +75,11 @@ such as configuration files, database connections, queues,
 external service endpoints, and so on.
 
 Upon use, a one-off container class based on L<Resource::Silo::Container>
-with a one-and-true (but not only) instance is created.
+with a one-and-true (but not necessarily only) instance is created.
 
 The resources are then defined using a L<Moose>-like DSL,
 and their identifiers become method names in said class.
-Apart from a name, each resource defined an initialization routine,
+Apart from a name, each resource has an initialization routine,
 and optionally dependencies, cleanup routine, and various flags.
 
 Resources are instantiated on demand and cached.
@@ -211,7 +211,7 @@ and will also be L<Moose>- and L<Moo>-compatible.
 
 =head3 -shortcut <function name>
 
-If specified, use that name for singleton instance instead of C<silo>.
+If specified, use that name for main instance, instead of C<silo>.
 Name must be a valid identifier, i.e. C</[a-z_][a-z_0-9]*/i>.
 
 =head2 resource
@@ -219,18 +219,19 @@ Name must be a valid identifier, i.e. C</[a-z_][a-z_0-9]*/i>.
     resource 'name' => sub { ... };
     resource 'name' => %options;
 
+If the number of arguments is odd,
+the last one is popped and considered to be the initializer.
+
 %options may include:
 
 =head3 init => sub { $container, $name, [$argument] }
 
-A coderef to obtain the resource.
+The initializer coderef.
 Required, unless C<literal> or C<class> are specified.
-
-If the number of arguments is odd,
-the last one is popped and considered to be the init function.
 
 The arguments to the initializer are the container itself,
 resource name, and an optional argument or an empty string if none given.
+(See C<argument> below).
 
 Returning an C<undef> value is considered an error.
 
@@ -239,7 +240,13 @@ that has requested the resource, skipping Resource::Silo's internals.
 
 =head3 literal => $value
 
-Replace initializer with C<sub { $value }>.
+Consider the resource to be a value known at startup time.
+This may be e.g. a configuration file name or an environmental variable:
+
+    resource config_file =>
+        literal => $ENV{MY_CONFIG} // '/etc/myapp/config.yaml';
+
+Replaces initializer with C<sub { $value }>.
 
 In addition, C<derived> flag is set,
 and an empty C<dependencies> list is implied.
@@ -248,7 +255,7 @@ and an empty C<dependencies> list is implied.
 
 Declare a (possibly infinite) set of sibling resources under the same name,
 distinguished by a string parameter.
-Said parameter will be passed as the 3rd parameter to the C<init> function.
+Said parameter will be passed to the C<init> function.
 
 Exactly one resource instance will be cached per argument value.
 
@@ -278,8 +285,8 @@ E.g. when using L<Redis::Namespace>:
 
 =head3 derived => 1 | 0
 
-Assume that resource can be derived from its dependencies,
-or that it introduces no extra side effects compared to them.
+Assume the resource introduces no side effects
+apart from those already handled by its dependencies.
 
 This also naturally applies to resources with pure initializers,
 i.e. those having no dependencies and adding no side effects on top.
@@ -289,7 +296,7 @@ or L<DBIx::Class> built on top of L<DBI> connection.
 
 Derivative resources may be instantiated even in locked mode,
 as they would only initialize if their dependencies have already been
-initialized or overridden.
+either initialized, or overridden.
 
 See L<Resource::Silo::Container/lock>.
 
@@ -432,8 +439,7 @@ itself except that it's more explicit.
 
 =head2 silo
 
-A re-exportable singleton function returning
-one and true L<Resource::Silo::Container> instance
+A re-exportable function returning one and true container instance
 associated with the class where the resources were declared.
 
 B<NOTE> Calling C<use Resource::Silo> from a different module will
@@ -444,6 +450,8 @@ I<This is done on purpose so that multiple projects or modules can coexist
 within the same interpreter without interference.>
 
 C<silo-E<gt>new> will create a new instance of the I<same> container class.
+The resource container class may therefore be viewed as an
+I<optional singleton>.
 
 =head1 CAVEATS AND CONSIDERATIONS
 
