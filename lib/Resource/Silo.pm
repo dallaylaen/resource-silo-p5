@@ -626,6 +626,9 @@ Using L<DBIx::Class> together with a regular L<DBI> connection:
 
 L<Bread::Board> - a more mature IoC / DI framework.
 
+L<Bread::Board::Declare> - a declarative wrapper around
+L<Bread::Board> and L<Moose>, resulting in a DSL similar to this module's.
+
 =head1 BUGS
 
 This software is still in beta stage. Its interface is still evolving.
