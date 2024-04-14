@@ -72,7 +72,6 @@ subtest 'override normal resource after fork' => sub {
         return \%trace;
     };
 
-    note explain $data;
     is_deeply $data, {
         %trace,
         cleanup_normal_1 => 1,
@@ -86,7 +85,6 @@ subtest 'override fork-aware resource after fork' => sub {
         return \%trace;
     };
 
-    note explain $data;
     is_deeply $data, {
         %trace,
         cleanup_normal_1 => 1,
@@ -100,7 +98,6 @@ subtest 'override fork-safe resource after fork' => sub {
         return \%trace;
     };
 
-    note explain $data;
     is_deeply $data, {
         %trace,
         cleanup_normal_1 => 1,
@@ -109,6 +106,19 @@ subtest 'override fork-safe resource after fork' => sub {
     }, "trace as expected";
 };
 
+subtest 'obtain fork-safe value' => sub {
+    my $data = run_fork {
+        my $new = $inst->safe;
+        return { %trace, new_value => $new };
+    };
+
+    is_deeply $data, {
+        %trace,
+        cleanup_normal_1 => 1,
+        forked_aware_2 => 1,
+        new_value => 'safe_3',
+    }, "trace as expected";
+};
 
 done_testing;
 
