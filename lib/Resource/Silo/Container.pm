@@ -163,10 +163,12 @@ sub _silo_instantiate_res {
 
 # use instead of delete $self->{-cache}{$name}
 sub _silo_cleanup_res {
-    my ($self, $name) = @_;
+    my ($self, $name, %opt) = @_;
 
     # TODO Do we need to validate arguments here?
     my $spec = $self->{-spec}{resource}{$name};
+
+    return if $opt{fork} and $spec->{fork_safe};
 
     # NOTE Be careful! cleanup must never ever die!
 
@@ -174,7 +176,7 @@ sub _silo_cleanup_res {
     if (!$self->{-override}{$name}) {
         # 1) skip resources that have overrides
         # 2) if we're in "no pid" mode, use fork_cleanup if available
-        $action = $self->{-pid} != $$
+        $action = $opt{fork}
             && $spec->{fork_cleanup}
             || $spec->{cleanup};
     };
@@ -336,6 +338,8 @@ sub override {
     my ($self, %subst) = @_;
 
     $$self->_silo_check_overrides(\%subst);
+    $self->ctl->_cleanup( fork => 1 )
+        if $$ != $$self->{-pid};
     $$self->_silo_do_override(\%subst);
 
     return $self;
@@ -406,8 +410,13 @@ Typically only useful for destruction.
 =cut
 
 sub cleanup {
+    my $self = shift;
     # Don't give the user access to options (yet)
-    $_[0]->_cleanup;
+
+    my @opt;
+    push @opt, fork => 1 if $$ != $$self->{-pid};
+
+    $self->_cleanup(@opt);
 }
 
 sub _cleanup {
@@ -422,8 +431,9 @@ sub _cleanup {
         $spec->{$a}{cleanup_order} <=> $spec->{$b}{cleanup_order};
     } keys %{ $self->{-cache} };
 
+
     foreach my $name (@order) {
-        $self->_silo_cleanup_res($name);
+        $self->_silo_cleanup_res($name, %opt);
     };
 
     return $_[0];

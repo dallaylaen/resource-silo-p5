@@ -108,6 +108,13 @@ subtest 'cleanup' => sub {
             ignore_cache            => 1,
             init                    => sub {};
     } qr(^resource '\w+':.*'cleanup\*'.*'ignore_cache'), 'cleanup incompatible with nocache';
+
+    throws_ok {
+        resource fork_safe_with_cleanup =>
+            init         => sub {},
+            fork_cleanup => sub {},
+            fork_safe    => 1;
+    } qr(^resource '\w+':.*.*mutually exclusive);
 };
 
 subtest 'dependencies' => sub {

@@ -337,7 +337,7 @@ and may be change again in the near future.
 This parameter has a different structure
 if C<class> parameter is in action (see below).
 
-=head3 loose_deps => 1|0
+=head3 loose_deps => 0 | 1
 
 Allow dependencies that have not been declared yet.
 
@@ -402,6 +402,14 @@ The default is same as C<cleanup>.
 
 See L</FORKING>.
 
+=head3 fork_safe => 0 | 1
+
+If present, don't reinitialize resource if the process ID change is detected.
+E.g. in a daemon we don't want to re-read and re-parse the configuration
+every time a new worker starts.
+
+This is mutually exclusive with C<fork_cleanup>.
+
 =head3 cleanup_order => $number
 
 The higher the number, the later the resource will get destroyed.
@@ -419,7 +427,7 @@ you application
             Log::Any->get_logger;
         };
 
-=head3 derived => 1 | 0
+=head3 derived => 0 | 1
 
 Assume the resource introduces no side effects
 apart from those already handled by its dependencies.
@@ -436,12 +444,12 @@ either initialized, or overridden.
 
 See L<Resource::Silo::Container/lock>.
 
-=head3 ignore_cache => 1 | 0
+=head3 ignore_cache => 0 | 1
 
 If set, don't cache resource, always create a fresh one instead.
 See also L<Resource::Silo::Container/fresh>.
 
-=head3 preload => 1 | 0
+=head3 preload => 0 | 1
 
 If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
 Useful if you want to throw errors when a service is starting,

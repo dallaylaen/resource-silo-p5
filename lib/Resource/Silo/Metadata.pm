@@ -53,6 +53,8 @@ Create resource type. See L<Resource::Silo/resource> for details.
 
 =cut
 
+# Alphabetical order, please
+# TODO add types to the hash to simplify checks
 my %known_args = (
     argument        => 1,
     class           => 1,
@@ -61,6 +63,7 @@ my %known_args = (
     cleanup         => 1,
     cleanup_order   => 1,
     fork_cleanup    => 1,
+    fork_safe       => 1,
     ignore_cache    => 1,
     init            => 1,
     literal         => 1,
@@ -174,6 +177,8 @@ sub add {
         if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne $CODE;
     croak "resource '$name': 'fork_cleanup' must be a function"
         if defined $spec{fork_cleanup} and (reftype $spec{fork_cleanup} // '') ne $CODE;
+    croak "resource '$name': 'fork_cleanup' and 'fork_safe' are mutually exclusive"
+        if $spec{fork_cleanup} and $spec{fork_safe};
 
     if ($spec{preload}) {
         push @{ $self->{preload} }, $name;
