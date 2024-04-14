@@ -1,5 +1,8 @@
 # Revision history for Resource::Silo
 
+- 0.13    Sun Apr 14 2024
+    - [api] Add fork_safe => 0 | 1 flag to skip re-initialization after fork.
+
 - 0.1203  Tue Mar 05 2024
     - Add a dummy export(resource, silo) to hint IDEs
 

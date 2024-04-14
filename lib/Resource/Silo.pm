@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.1203';
+our $VERSION = '0.13';
 
 use Carp;
 use Scalar::Util qw( set_prototype );

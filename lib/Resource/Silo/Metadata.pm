@@ -2,7 +2,7 @@ package Resource::Silo::Metadata;
 
 use strict;
 use warnings;
-our $VERSION = '0.1203';
+our $VERSION = '0.13';
 
 =head1 NAME
 
