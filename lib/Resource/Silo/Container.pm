@@ -163,10 +163,12 @@ sub _silo_instantiate_res {
 
 # use instead of delete $self->{-cache}{$name}
 sub _silo_cleanup_res {
-    my ($self, $name, @list) = @_;
+    my ($self, $name) = @_;
 
     # TODO Do we need to validate arguments here?
     my $spec = $self->{-spec}{resource}{$name};
+
+    # NOTE Be careful! cleanup must never ever die!
 
     my $action;
     if (!$self->{-override}{$name}) {
@@ -178,15 +180,23 @@ sub _silo_cleanup_res {
     };
     my $known = $self->{-cache}{$name};
 
-    @list = keys %$known
-        unless @list;
+    my @list = keys %$known;
 
-    foreach my $arg (@list) {
-        $arg //= '';
-        next unless defined $known->{$arg};
-        $action->($known->{$arg}) if $action;
-        delete $known->{$arg};
+    if ($action) {
+        foreach my $arg (@list) {
+            local $@; # don't pollute $@ if we're in destructor after an exception
+            eval {
+                $action->($known->{$arg});
+                1;
+            } or do {
+                my $err = $@;
+                Carp::cluck "Failed to cleanup resource '$name/$arg', but trying to continue: $err";
+            };
+        };
     };
+
+    # This will trigger the normal destructor(s) on resource instances, if any
+    delete $self->{-cache}{$name};
 };
 
 # We must create resource accessors in this package
@@ -396,7 +406,13 @@ Typically only useful for destruction.
 =cut
 
 sub cleanup {
-    my $self = ${ $_[0] };
+    # Don't give the user access to options (yet)
+    $_[0]->_cleanup;
+}
+
+sub _cleanup {
+    my $self = ${ +shift };
+    my %opt = @_;
     local $self->{-cleanup} = 1; # This is stronger than lock.
 
     # NOTE Be careful! cleanup must never ever die!
@@ -407,20 +423,9 @@ sub cleanup {
     } keys %{ $self->{-cache} };
 
     foreach my $name (@order) {
-        local $@; # don't pollute $@ if we're in destructor after an exception
-        eval {
-            # We cannot afford to die here as if we do
-            #    a resource that causes exceptions in cleanup
-            #    would be stuck in cache forever
-            $self->_silo_cleanup_res($name);
-            1;
-        } or do {
-            my $err = $@;
-            Carp::cluck "Failed to cleanup resource '$name', but trying to continue: $err";
-        };
+        $self->_silo_cleanup_res($name);
     };
 
-    delete $self->{-cache};
     return $_[0];
 };
 
