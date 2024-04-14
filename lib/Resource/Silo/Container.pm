@@ -338,7 +338,7 @@ sub override {
     my ($self, %subst) = @_;
 
     $$self->_silo_check_overrides(\%subst);
-    $self->ctl->_cleanup( fork => 1 )
+    $self->_cleanup( fork => 1 )
         if $$ != $$self->{-pid};
     $$self->_silo_do_override(\%subst);
 
