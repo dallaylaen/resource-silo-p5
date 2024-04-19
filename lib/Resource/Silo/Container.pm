@@ -94,21 +94,15 @@ Example:
     silo->ctl->override( dbh => $fake_database_connection );
     silo->ctl->lock; # forbid instantiating new resources
 
-Returns a facade object.
-
-B<NOTE> Such object contains a weak reference to the parent object
-and thus must not be saved anywhere, lest you be surprised.
-Use it and discard immediately.
+Returns a facade object referencing the original container.
 
 =cut
 
 sub ctl {
     my $self = shift;
-    my $facade = bless \$self, 'Resource::Silo::Container::Dashboard';
-    weaken $$facade;
-    confess "Attempt to close over nonexistent value"
-        unless $$facade;
-    return $facade;
+    return bless \$self, 'Resource::Silo::Container::Dashboard';
+    # 'Clever' weaken-ing code was here
+    # Please don't do this again, it's unnecessary
 };
 
 # Instantiate resource $name with argument $argument.
