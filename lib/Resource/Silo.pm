@@ -44,7 +44,7 @@ sub import {
         };
     };
 
-    $target ||= __PACKAGE__."::container::".$caller;
+    $target //= __PACKAGE__."::container::".$caller;
 
     my $spec = Resource::Silo::Metadata->new($target);
     $metadata{$target} = $spec;
