@@ -135,6 +135,12 @@ subtest 'dependencies' => sub {
             dependencies    => [\"foo"],
             init            => sub {};
     } qr(^resource '\w+': illegal dependenc), "dependencies must be array";
+
+    throws_ok {
+        resource deps_4 =>
+            dependencies    => ["unknown"],
+            init            => sub {};
+    } qr(^resource '\w+': .*\bforward\b.*\bloose_deps\b), "forward dependencies require special flag";
 };
 
 subtest 'Bread::Board-like DI' => sub {
