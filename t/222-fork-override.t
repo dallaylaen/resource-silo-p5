@@ -10,13 +10,8 @@ use strict;
 use warnings;
 use Test::More;
 
-BEGIN {
-    eval { require JSON::PP; 1 }
-        or do { plan skip_all => "JSON not found"; exit };
-    JSON::PP->import();
-};
-
-sub run_fork(&); ## no critic 'prototypes'
+use lib::relative 'lib';
+use Local::Fork qw(run_fork);
 
 my %trace;
 {
@@ -121,27 +116,4 @@ subtest 'obtain fork-safe value' => sub {
 };
 
 done_testing;
-
-sub run_fork(&) { ## no critic 'prototypes'
-    my $code = shift;
-
-    pipe my $r, my $w
-        or die "pipe failed: $!";
-    my $pid = fork;
-    die "Fork failed: $!" unless defined $pid;
-
-    if ($pid) {
-        close $w;
-        local $/;
-        my $result = <$r>;
-        waitpid( $pid, 0 );
-        return decode_json($result);
-    } else {
-        close $r;
-        my $result = $code->();
-        print $w encode_json($result);
-        close $w;
-        exit;
-    };
-};
 
