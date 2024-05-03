@@ -162,7 +162,7 @@ sub _silo_cleanup_res {
     # TODO Do we need to validate arguments here?
     my $spec = $self->{-spec}{resource}{$name};
 
-    return if $opt{fork} and $spec->{fork_safe};
+    return if $opt{fork} and not $opt{force} and $spec->{fork_safe};
 
     # NOTE Be careful! cleanup must never ever die!
 
@@ -212,9 +212,9 @@ sub _silo_make_accessor {
         my ($self, $arg) = @_;
 
         # If there was a fork, flush cache
-        if ($self->{-pid} != $$) {
-            $self->ctl->cleanup;
-            $self->{-pid} = $$;
+        if ($self->{-pid} != (my $pid = $$)) {
+            $self->ctl->_cleanup( fork => 1 );
+            $self->{-pid} = $pid;
         };
 
         # We must check dependencies even before going to the cache
@@ -408,7 +408,7 @@ sub cleanup {
     # Don't give the user access to options (yet)
 
     my @opt;
-    push @opt, fork => 1 if $$ != $$self->{-pid};
+    push @opt, fork => 1, force => 1 if $$ != $$self->{-pid};
 
     $self->_cleanup(@opt);
 }
