@@ -640,6 +640,10 @@ This software is still in beta stage. Its interface is still evolving.
 
 =item * Version 0.09 brings a breaking change that forbids forward dependencies.
 
+=item * Version 0.14 removes the C<ignore_cache> flag
+as it doesn't seem to have compelling use cases
+while complicating the implementation.
+
 =item * Forced re-exporting of C<silo> was probably a bad idea
 and should have been left as an exercise to the user.
 
