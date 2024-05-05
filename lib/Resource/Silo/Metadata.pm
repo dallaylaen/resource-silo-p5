@@ -176,6 +176,8 @@ sub add {
     croak "resource '$name': 'fork_cleanup' and 'fork_safe' are mutually exclusive"
         if $spec{fork_cleanup} and $spec{fork_safe};
 
+    $spec{fork_cleanup} //= $spec{cleanup};
+
     if ($spec{preload}) {
         push @{ $self->{preload} }, $name;
     };

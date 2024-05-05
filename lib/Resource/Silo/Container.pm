@@ -168,9 +168,7 @@ sub _silo_cleanup_res {
     if (!$self->{-override}{$name}) {
         # 1) skip resources that have overrides
         # 2) if we're in "no pid" mode, use fork_cleanup if available
-        $action = $opt{fork}
-            && $spec->{fork_cleanup}
-            || $spec->{cleanup};
+        $action = $opt{fork} ? $spec->{fork_cleanup} : $spec->{cleanup};
     };
     my $known = $self->{-cache}{$name};
 
