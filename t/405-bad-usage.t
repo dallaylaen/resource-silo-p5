@@ -9,6 +9,10 @@ use Scalar::Util qw( weaken );
 use Resource::Silo;
 
 throws_ok {
+    Resource::Silo::Container->new;
+} qr(iled to locate), "empty container = no go";
+
+throws_ok {
     silo->ctl->fresh('my_resource_$');
 } qr(Illegal.*'.*_\$'), "resource names must be identifiers";
 

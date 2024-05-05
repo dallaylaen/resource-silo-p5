@@ -63,7 +63,8 @@ sub BUILD {
 sub DEMOLISH {
     my $self = shift;
     delete $active_instances{ refaddr $self };
-    $self->ctl->cleanup;
+    $self->ctl->cleanup
+        if $self->{-spec};
 };
 
 # As container instances inside the silo() function will be available forever,
@@ -129,9 +130,6 @@ sub _silo_instantiate_res {
         if $self->{-locked}
             and !$spec->{derived}
             and !$self->{-override}{$name};
-
-    self->_silo_unexpected_dep($name)
-        if ($self->{-allow} && !$self->{-allow}{$name});
 
     # Detect circular dependencies
     my $key = $name . (length $arg ? "/$arg" : '');
@@ -200,13 +198,6 @@ sub _silo_cleanup_res {
 #   (+ This way no other classes need to know our internal structure)
 sub _silo_make_accessor {
     my ($name, $spec) = @_;
-
-    if ($spec->{ignore_cache}) {
-        return sub {
-            my ($self, $arg) = @_;
-            return $self->_silo_instantiate_res($name, $arg);
-        };
-    };
 
     return sub {
         my ($self, $arg) = @_;

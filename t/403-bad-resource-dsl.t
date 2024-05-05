@@ -96,20 +96,6 @@ subtest 'cleanup' => sub {
     } qr(^resource '\w+': .*\bfork_cleanup\b.*function), 'wrong cleanup method spec';
 
     throws_ok {
-        resource cleanup_wo_cache =>
-            cleanup                 => sub {},
-            ignore_cache            => 1,
-            init                    => sub {};
-    } qr(^resource '\w+':.*'cleanup\*'.*'ignore_cache'), 'cleanup incompatible with nocache';
-
-    throws_ok {
-        resource cleanup_wo_cache_2 =>
-            fork_cleanup            => sub {},
-            ignore_cache            => 1,
-            init                    => sub {};
-    } qr(^resource '\w+':.*'cleanup\*'.*'ignore_cache'), 'cleanup incompatible with nocache';
-
-    throws_ok {
         resource fork_safe_with_cleanup =>
             init         => sub {},
             fork_cleanup => sub {},

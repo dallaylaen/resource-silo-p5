@@ -64,7 +64,7 @@ my %known_args = (
     cleanup_order   => 1,
     fork_cleanup    => 1,
     fork_safe       => 1,
-    ignore_cache    => 1,
+    ignore_cache    => 1, # deprecated but has a special error message
     init            => 1,
     literal         => 1,
     loose_deps      => 1,
@@ -91,6 +91,9 @@ sub add {
     my @extra = grep { !$known_args{$_} } keys %spec;
     croak "resource '$name': unknown arguments in specification: @extra"
         if @extra;
+
+    croak "'ignore_cache' is deprecated. Use a simple method instead"
+        if exists $spec{ignore_cache};
 
     {
         # validate 'require' before 'class'
@@ -165,13 +168,6 @@ sub add {
     $spec{cleanup_order} //= 0;
     croak "resource '$name': 'cleanup_order' must be a number"
         unless looks_like_number($spec{cleanup_order});
-
-    croak "resource '$name': 'cleanup*' is useless while 'ignore_cache' is in use"
-        if $spec{ignore_cache} and (
-            defined $spec{cleanup}
-            or defined $spec{fork_cleanup}
-            or $spec{cleanup_order} != 0
-        );
 
     croak "resource '$name': 'cleanup' must be a function"
         if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne $CODE;

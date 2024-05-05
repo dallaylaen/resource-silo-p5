@@ -444,11 +444,6 @@ either initialized, or overridden.
 
 See L<Resource::Silo::Container/lock>.
 
-=head3 ignore_cache => 0 | 1
-
-If set, don't cache resource, always create a fresh one instead.
-See also L<Resource::Silo::Container/fresh>.
-
 =head3 preload => 0 | 1
 
 If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
