@@ -1,5 +1,12 @@
 # Revision history for Resource::Silo
 
+- 0.14    Wed May 15 2024
+    - [api][break] remove 'ignore_cache', add more tricky test cases
+    - [api][break] Remove ->ctl weakening as it's unnecessary complication
+    - [repo] Add JSON::PP and lib::relative as test deps
+    - [ref] Simpler & cleaner logic in the core
+    - [test] Lots of tricky test cases added
+
 - 0.13    Sun Apr 14 2024
     - [api] Add fork_safe => 0 | 1 flag to skip re-initialization after fork.
 
