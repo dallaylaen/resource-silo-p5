@@ -149,7 +149,11 @@ sub _silo_instantiate_res {
     local $self->{-pending}{$key} = 1;
     local $self->{-allow} = $spec->{allowdeps};
 
-    ($self->{-override}{$name} // $spec->{init})->($self, $name, $arg)
+    my $init = $self->{-override}{$name} // $spec->{init};
+    my $entity = $init->($self, $name, $arg);
+    $entity = $spec->{post_init}->($entity, $self)
+        if $spec->{post_init};
+    return $entity
         // croak "Instantiating resource '$key' $spec->{origin} failed for no apparent reason";
 };
 

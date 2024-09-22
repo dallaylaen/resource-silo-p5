@@ -379,6 +379,19 @@ E.g. when using L<Redis::Namespace>:
             );
         };
 
+=head3 post_init => sub { $resource_instance, $container }
+
+Enforce or ensure certain properties of the given resource, or replace it completely.
+The C<post_init> function must return the $resource_instance.
+
+It is applied after the resource is initialized and before it is put into the cache,
+for B<both> normally initialized I<and> overridden resources.
+
+I<Argument order mnemonic>: once the resource is instantiated, it takes control,
+and the container is just there as argument.
+
+B<NOTE> Experimental, name and semantics may change in the future.
+
 =head3 cleanup => sub { $resource_instance }
 
 Undo the init procedure.
