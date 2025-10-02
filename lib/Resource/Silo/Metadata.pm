@@ -84,7 +84,7 @@ sub add {
 
     croak "resource: name must be an identifier"
         unless defined $name and !ref $name and $name =~ $ID_REX;
-    croak "resource: attempt to redefine resource '$name'"
+    croak "resource: attempt to redefine resource" . $self->elaborate_name($name)
         if defined $self->{resource}{$name};
     croak "resource: attempt to replace existing method '$name' in $target"
         if $target->can($name);
@@ -354,6 +354,24 @@ sub self_check {
 
     return $self;
 };
+
+=head2 elaborate_name( $name )
+
+Return a resource name with origin information if available, or just the name in single quotes.
+
+Might look like this:
+
+    'my_resource' declared at My/Module.pm line 42
+
+=cut
+
+sub elaborate_name {
+    my ($self, $name) = @_;
+
+    my $res = $self->{resource}{$name};
+    return "'$name'" unless $res;
+    return "'$name' declared at ".$res->{origin};
+}
 
 =head1 COPYRIGHT AND LICENSE
 
