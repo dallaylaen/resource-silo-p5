@@ -329,29 +329,23 @@ itself except that it's more explicit.
 
 =head3 dependencies => \@list
 
-List other resources that may be requested in the initializer.
-Unless C<loose_deps> is specified (see below),
-the dependencies I<must> be declared I<before> the dependant.
+List of other resources that may be requested in the initializer.
+Attempting to use a resource that was not listed will cause an exception.
 
-A resource with parameter may also depend on itself.
+Attempt to create a circular dependency will cause an exception as well.
+As an exception, a resource with parameter may depend on itself.
 
-The default is all eligible resources known so far.
+Lastly, having unresolved dependencies upon container instantiation
+will also cause an exception.
+
+If unspecified, any dependencies are allowed, but circular instantiation
+will still be prohibited.
 
 B<NOTE> This behavior was different prior to v.0.09
 and may be change again in the near future.
 
 This parameter has a different structure
 if C<class> parameter is in action (see below).
-
-=head3 loose_deps => 0 | 1
-
-Allow dependencies that have not been declared yet.
-
-Not specifying the C<dependencies> parameter would now mean
-there are no restrictions whatsoever.
-
-B<NOTE> Having to resort to this flag may be
-a sign of a deeper architectural problem.
 
 =head3 argument => C<sub { ... }> || C<qr( ... )>
 
@@ -470,6 +464,11 @@ Useful if you want to throw errors when a service is starting,
 not during request processing.
 
 See L<Resource::Silo::Container/preload>.
+
+=head3 loose_deps => 0 | 1
+
+Prior to v.0.14, this flag allowed forward dependencies.
+Currently does nothing except emitting a warning.
 
 =head2 silo
 

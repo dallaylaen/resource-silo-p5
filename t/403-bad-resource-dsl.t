@@ -121,12 +121,6 @@ subtest 'dependencies' => sub {
             dependencies    => [\"foo"],
             init            => sub {};
     } qr(^resource '\w+': illegal dependenc), "dependencies must be array";
-
-    throws_ok {
-        resource deps_4 =>
-            dependencies    => ["unknown"],
-            init            => sub {};
-    } qr(^resource '\w+': .*\bforward\b.*\bloose_deps\b), "forward dependencies require special flag";
 };
 
 subtest 'Bread::Board-like DI' => sub {
@@ -204,7 +198,7 @@ subtest 'literal' => sub {
 
 my $leftover = [ silo->ctl->meta->list ];
 is_deeply $leftover, [ 'dup' ]
-    , "no resources except the duplicate one present"
+    , "(overall self-check) no resources made it through, except the first copy of the duplicate one"
     or note explain $leftover;
 
 done_testing;

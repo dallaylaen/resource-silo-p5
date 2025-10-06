@@ -24,6 +24,11 @@ use Module::Load qw( load );
 use Scalar::Util qw( looks_like_number reftype );
 use Sub::Quote qw( quote_sub );
 
+use Resource::Silo::Metadata::DAG;
+
+# TODO make Carp recognise Moo's internals as internal
+our @CARP_NOT = qw(Resource::Silo Resource::Silo::Container);
+
 my $BARE_REX = '[a-z][a-z_0-9]*';
 my $ID_REX   = qr(^$BARE_REX$)i;
 my $MOD_REX  = qr(^$BARE_REX(?:::$BARE_REX)*$)i;
@@ -42,8 +47,17 @@ $target is the name of the module where resource access methods will be created.
 sub new {
     my ($class, $target) = @_;
     return bless {
-        target  => $target,
-        preload => [],
+        # package to work on
+        target       => $target,
+
+        # resources to load immediately upon startup
+        preload      => [],
+
+        # resource spec storage
+        resource     => {},
+
+        # tracking of forward dependencies:
+        pending_deps => Resource::Silo::Metadata::DAG->new,
     }, $class;
 };
 
@@ -67,7 +81,7 @@ my %known_args = (
     ignore_cache    => 1, # deprecated but has a special error message
     init            => 1,
     literal         => 1,
-    loose_deps      => 1,
+    loose_deps      => 1, # deprecated, noop + warning
     post_init       => 1,
     preload         => 1,
     require         => 1,
@@ -95,6 +109,9 @@ sub add {
 
     croak "'ignore_cache' is deprecated. Use a simple method instead"
         if exists $spec{ignore_cache};
+
+    carp "'loose_deps' is deprecated and has no effect"
+        if delete $spec{loose_deps};
 
     {
         # validate 'require' before 'class'
@@ -132,24 +149,6 @@ sub add {
         $spec{allowdeps} = { map { $_ => 1 } @$deps };
     };
 
-    unless ($spec{loose_deps}) {
-        # resources with argument should be allowed to depend on themselves
-        local $self->{resource}{$name} = {}
-            if defined $spec{argument};
-
-        if ($spec{allowdeps}) {
-            my @fwd = grep { !$self->{resource}{$_} } keys %{ $spec{allowdeps} };
-            croak "resource '$name': forward dependencies require 'loose_deps' flag: "
-                .join( ", ", map { "'$_'" } @fwd)
-                    if @fwd;
-        } else {
-            $spec{autodeps}  = 1;
-            $spec{allowdeps} = {
-                map { $_ => 1 } keys %{ $self->{resource} },
-            };
-        };
-    };
-
     croak "resource '$name': 'init' must be a function"
         unless ref $spec{init} and reftype $spec{init} eq $CODE;
 
@@ -163,7 +162,7 @@ sub add {
     } elsif ((reftype $spec{argument} // '') eq $CODE) {
         # do nothing, we're fine
     } else {
-        croak "resource '$name': 'argument' must be a regexp or function";
+        croak "resource '$name': 'argument' must be a regexp or a function";
     }
 
     $spec{cleanup_order} //= 0;
@@ -187,7 +186,17 @@ sub add {
 
     $spec{origin} = Carp::shortmess("declared");
     $spec{origin} =~ s/\D+$//s;
-    $self->{resource}{$name} = \%spec;
+
+    my @forward_deps = grep { !$self->{resource}{$_} || $self->{pending_deps}->contains($_) }
+        keys %{ $spec{allowdeps} || {} };
+    if (@forward_deps) {
+        my $loop = $self->{pending_deps}->find_loop($name, \@forward_deps);
+        if ($loop) {
+            my $msg = "resource '$name': circular dependency detected: ".
+                join " -> ", map { $self->elaborate_name($_) } @$loop;
+            croak $msg;
+        }
+    }
 
     # Move code generation into Resource::Silo::Container
     # so that exceptions via croak() are attributed correctly.
@@ -196,6 +205,14 @@ sub add {
         *{"${target}::$name"} =
             Resource::Silo::Container::_silo_make_accessor($name, \%spec);
     }
+
+    if (@forward_deps) {
+        $self->{pending_deps}->add_edges([$name], \@forward_deps);
+    } else {
+        # resource is independent, notify dependents if any
+        $self->{pending_deps}->drop_sink_cascade($name);
+    };
+    $self->{resource}{$name} = \%spec;
 
     return $self;
 };
@@ -316,7 +333,7 @@ sub show {
     return \%show;
 };
 
-=head2 self_check()
+=head2 preload()
 
 Check setup validity. Dies on errors, return C<$self> otherwise.
 
@@ -324,9 +341,7 @@ The following checks are available so far:
 
 =over
 
-=item * dependencies must be defined;
-
-=item * required modules must be loadable.
+=item * modules required by I<any> resources are loaded.
 
 =back
 
@@ -334,17 +349,12 @@ B<EXPERIMENTAL>. Interface & performed checks may change in the future.
 
 =cut
 
-sub self_check {
+sub preload {
     my $self = shift;
 
     my $res = $self->{resource};
     foreach my $name (sort keys %$res) {
         my $entry = $res->{$name};
-
-        my @missing_deps = grep { !$res->{$_} } keys %{ $entry->{allowdeps} || {} };
-        croak "resource '$name': missing dependencies: ".
-            join ", ", map { "'$_'" } @missing_deps
-                if @missing_deps;
 
         foreach my $mod ( @{ $entry->{require} } ) {
             eval { load $mod; 1 }
@@ -354,6 +364,29 @@ sub self_check {
 
     return $self;
 };
+
+=head2 run_pending_checks
+
+=cut
+
+sub run_pending_checks {
+    my $self = shift;
+
+    my @unsatisfied = $self->{pending_deps}->list_sinks;
+
+    if (@unsatisfied) {
+        # TODO even more elaborate error message
+        my @wanted_by =
+            map { $self->elaborate_name($_) }
+            $self->{pending_deps}->list_predecessors(\@unsatisfied);
+        my $msg = "Unsatisfied dependencies ("
+            . join (", ", @unsatisfied)
+            . ") required by ("
+            . join (", ", @wanted_by)
+            . ")";
+        croak $msg;
+    };
+}
 
 =head2 elaborate_name( $name )
 
@@ -369,8 +402,8 @@ sub elaborate_name {
     my ($self, $name) = @_;
 
     my $res = $self->{resource}{$name};
-    return "'$name'" unless $res;
-    return "'$name' declared at ".$res->{origin};
+    return "'$name'" unless $res && $res->{origin};
+    return "'$name' $res->{origin}";
 }
 
 =head1 COPYRIGHT AND LICENSE

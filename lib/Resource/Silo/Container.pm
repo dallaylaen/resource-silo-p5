@@ -51,6 +51,10 @@ sub BUILD {
     my $spec = $Resource::Silo::metadata{ref $self}
         // _silo_find_metaclass($self);
 
+    # TODO Carp doesn't seem to work correctly from constructor with either Moo or Moose,
+    #      but at least we now generate pointers to where the offending resources are declared
+    $spec->run_pending_checks;
+
     $self->{-spec} = $spec;
     $self->{-pid} = $$;
 
@@ -378,7 +382,7 @@ sub preload {
 
     my $meta = $$self->{-spec};
 
-    $meta->self_check;
+    $meta->preload;
 
     my $list = $meta->{preload};
     for my $name (@$list) {
