@@ -67,6 +67,12 @@ sub import {
     *{"${caller}::$shortcut"}     = $silo;
 };
 
+sub get_meta {
+    my ($self, $target) = @_;
+
+    return $metadata{$target};
+}
+
 1; # End of Resource::Silo
 
 __END__
@@ -480,6 +486,13 @@ within the same interpreter without interference.>
 C<silo-E<gt>new> will create a new instance of the I<same> container class.
 The resource container class may therefore be viewed as an
 I<optional singleton>.
+
+=head1 UTILITY FUNCTIONS
+
+=head2 get_meta($package)
+
+Return a L<Resource::Silo::Metadata> object associated with the given package,
+if any.
 
 =head1 CAVEATS AND CONSIDERATIONS
 
