@@ -196,6 +196,20 @@ subtest 'literal' => sub {
     } qr(^resource '\w+': 'literal'.*incompatible.*'class'), "literal + init = no go";
 };
 
+subtest 'check' => sub {
+    throws_ok {
+        resource check_1 =>
+            check           => {},
+            init            => sub {};
+    } qr(^resource '\w+': 'check' .*function), "bad self-check type";
+
+    throws_ok {
+        resource check_2 =>
+            check           => "function",
+            init            => sub {};
+    } qr(^resource '\w+': 'check' .*function), "bad self-check type (2)";
+};
+
 my $leftover = [ silo->ctl->meta->list ];
 is_deeply $leftover, [ 'dup' ]
     , "(overall self-check) no resources made it through, except the first copy of the duplicate one"

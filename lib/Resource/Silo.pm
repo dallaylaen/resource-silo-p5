@@ -379,16 +379,13 @@ E.g. when using L<Redis::Namespace>:
             );
         };
 
-=head3 post_init => sub { $resource_instance, $container }
+=head3 check => sub { $container, $resource, $name, $argument }
 
-Enforce or ensure certain properties of the given resource, or replace it completely.
-The C<post_init> function must return the $resource_instance.
+Check the resource after initialization.
+The function must throw an exception if the resource is invalid.
 
 It is applied after the resource is initialized and before it is put into the cache,
-for B<both> normally initialized I<and> overridden resources.
-
-I<Argument order mnemonic>: once the resource is instantiated, it takes control,
-and the container is just there as argument.
+both for normally initialized and overridden resources.
 
 B<NOTE> Experimental, name and semantics may change in the future.
 
@@ -476,7 +473,7 @@ will not be called again for the same resource (and argument, if any).
 This may indicate e.g. that the resource is optional
 and is not required for normal operations.
 
-IF C<post_init> is present, it will be omitted for C<undef> value.
+IF C<check> is present, it will be omitted for C<undef> value.
 
 =head3 loose_deps => 0 | 1
 

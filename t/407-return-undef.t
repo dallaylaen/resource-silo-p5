@@ -21,7 +21,7 @@ resource param  =>
     init            => sub {};
 
 my $no_reason = "declared at ".quotemeta(__FILE__)." line \\d+ "
-    ."failed for no apparent reason";
+    .".* for no apparent reason";
 
 throws_ok {
     silo->bare;

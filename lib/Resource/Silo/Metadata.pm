@@ -72,6 +72,7 @@ Create resource type. See L<Resource::Silo/resource> for details.
 my %known_args = (
     argument        => 1,
     class           => 1,
+    check           => 1,
     dependencies    => 1,
     derived         => 1,
     cleanup         => 1,
@@ -83,7 +84,6 @@ my %known_args = (
     literal         => 1,
     loose_deps      => 1, # deprecated, noop + warning
     nullable        => 1,
-    post_init       => 1,
     preload         => 1,
     require         => 1,
 );
@@ -170,8 +170,8 @@ sub add {
     croak "resource '$name': 'cleanup_order' must be a number"
         unless looks_like_number($spec{cleanup_order});
 
-    croak "resource '$name': 'post_init' must be a function"
-        if defined $spec{post_init} and (reftype $spec{post_init} // '') ne $CODE;
+    croak "resource '$name': 'check' must be a function"
+        if defined $spec{check} and (reftype $spec{check} // '') ne $CODE;
     croak "resource '$name': 'cleanup' must be a function"
         if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne $CODE;
     croak "resource '$name': 'fork_cleanup' must be a function"

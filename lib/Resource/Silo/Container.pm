@@ -155,11 +155,13 @@ sub _silo_instantiate_res {
 
     my $init = $self->{-override}{$name} // $spec->{init};
     my $entity = $init->($self, $name, $arg);
-    return $entity if (!defined $entity and $spec->{nullable});
-    $entity = $spec->{post_init}->($entity, $self)
-        if $spec->{post_init};
-    return $entity
-        // croak "Instantiating resource '$key' $spec->{origin} failed for no apparent reason";
+    if (!defined $entity) {
+        return $entity if ($spec->{nullable});
+        croak "Instantiating resource '$key' $spec->{origin} returned undef for no apparent reason";
+    }
+    $spec->{check}->($self, $entity, $name, $arg)
+        if $spec->{check};
+    return $entity;
 };
 
 # use instead of delete $self->{-cache}{$name}

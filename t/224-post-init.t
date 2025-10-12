@@ -8,28 +8,28 @@ use Test::Exception;
 {
     package My::App224;
     use Resource::Silo -class;
+    use Carp;
 
     resource foo =>
-        init        => sub { 41 },
-        post_init   => sub {
-            my ($self, $container) = @_;
-            die "foo must be a number"
-                    unless $self =~ /^\d+$/;
-            return $self + 1;
+        init        => sub { 42 },
+        check       => sub {
+            my ($self, $value, $name, $arg) = @_;
+            croak "foo must be a number"
+                    unless $value =~ /^\d+$/;
         };
 }
 
 subtest 'normal usage' => sub {
     my $app = My::App224->new;
     lives_and {
-        is $app->foo, 42, "default value incremented";
+        is $app->foo, 42, "default value as expected";
     }
 };
 
 subtest 'good override' => sub {
-    my $app = My::App224->new(foo => 21);
+    my $app = My::App224->new(foo => 137);
     lives_and {
-        is $app->foo, 22, "overridden value implemented";
+        is $app->foo, 137, "overridden value holds";
     }
 };
 
