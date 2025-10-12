@@ -465,6 +465,19 @@ not during request processing.
 
 See L<Resource::Silo::Container/preload>.
 
+=head3 nullable => 0 | 1
+
+Setting this flag allows returning C<undef> from the initializer
+without causing an exception.
+
+The undefined value will still be cached, so the initializer
+will not be called again for the same resource (and argument, if any).
+
+This may indicate e.g. that the resource is optional
+and is not required for normal operations.
+
+IF C<post_init> is present, it will be omitted for C<undef> value.
+
 =head3 loose_deps => 0 | 1
 
 Prior to v.0.14, this flag allowed forward dependencies.

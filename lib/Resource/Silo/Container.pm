@@ -155,6 +155,7 @@ sub _silo_instantiate_res {
 
     my $init = $self->{-override}{$name} // $spec->{init};
     my $entity = $init->($self, $name, $arg);
+    return $entity if (!defined $entity and $spec->{nullable});
     $entity = $spec->{post_init}->($entity, $self)
         if $spec->{post_init};
     return $entity
@@ -221,7 +222,10 @@ sub _silo_make_accessor {
         # Stringify $arg ASAP, we'll validate it inside _silo_instantiate_res().
         # The cache entry for an invalid argument will never get populated.
         my $key = defined $arg && !ref $arg ? $arg : '';
-        $self->{-cache}{$name}{$key} //= $self->_silo_instantiate_res($name, $arg);
+        if (!exists $self->{-cache}{$name}{$key}) {
+            $self->{-cache}{$name}{$key} = $self->_silo_instantiate_res($name, $arg);
+        };
+        return $self->{-cache}{$name}{$key};
     };
 };
 

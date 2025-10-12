@@ -82,6 +82,7 @@ my %known_args = (
     init            => 1,
     literal         => 1,
     loose_deps      => 1, # deprecated, noop + warning
+    nullable        => 1,
     post_init       => 1,
     preload         => 1,
     require         => 1,
