@@ -1,5 +1,11 @@
 # Revision history for Resource::Silo
 
+- 0.15    Sun Oct 12 2025
+    - [api] Add nullable => 0|1 switch allowing undef value for resources
+    - [api] Add check => sub { $container, $resource } that dies if the resource is invalid
+    - [api][break] Allow forward dependencies by default; loose_deps becomes a no-op
+    - [api] Add Resource::Silo->get_meta('My::Package')
+
 - 0.14    Wed May 15 2024
     - [api][break] remove 'ignore_cache', add more tricky test cases
     - [api][break] Remove ->ctl weakening as it's unnecessary complication
