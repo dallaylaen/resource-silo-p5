@@ -1,5 +1,8 @@
 # Revision history for Resource::Silo
 
+- 0.1501  Mon Oct 13 2025
+    - [bug] Remove a stray dependency from tests
+
 - 0.15    Sun Oct 12 2025
     - [api] Add nullable => 0|1 switch allowing undef value for resources
     - [api] Add check => sub { $container, $resource } that dies if the resource is invalid

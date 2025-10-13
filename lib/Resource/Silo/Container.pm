@@ -2,7 +2,7 @@ package Resource::Silo::Container;
 
 use strict;
 use warnings;
-our $VERSION = '0.15';
+our $VERSION = '0.1501';
 
 =head1 NAME
 
