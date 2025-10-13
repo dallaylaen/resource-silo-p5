@@ -9,7 +9,6 @@ Test Resource::Silo::Metadata::DAG in isolation.
 use strict;
 use warnings;
 use Test::More;
-use Assert::Refute;
 
 use Resource::Silo::Metadata::DAG;
 
@@ -20,7 +19,9 @@ subtest 'add random edges to the graph' => sub {
     $graph->add_edges(['b'] => ['c']);
     $graph->add_edges(['d'] => ['e']);
 
-    refute $graph->self_check, "graph is consistent";
+    my $discrepancies = $graph->self_check;
+    ok !$discrepancies, "graph is consistent"
+        or diag $discrepancies;
     is $graph->size, 5, "5 nodes in the graph";
 
     is_deeply [ sort $graph->list ], [ qw( a b c d e ) ], "nodes as expected";
@@ -52,7 +53,8 @@ subtest 'add random edges to the graph' => sub {
     $graph->drop_sink_cascade('e');
     is_deeply [ sort $graph->list ], [ qw( a b c ) ], "e now provided, d is also completed";
 
-    refute $graph->self_check, "graph is consistent";
+    ok !$graph->self_check, "graph is consistent"
+        or diag $graph->self_check;
 };
 
 done_testing;
