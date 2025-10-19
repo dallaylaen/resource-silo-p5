@@ -1,5 +1,8 @@
 # Revision history for Resource::Silo
 
+- 0.16    Sun Oct 19 2025
+    - [api][break] Remove calling Exporter on user's behalf
+
 - 0.1502  Thu Oct 16 2025
     - [test] Fix tests in 5.010
 
