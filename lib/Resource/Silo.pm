@@ -61,8 +61,6 @@ sub import {
 
     push @{"${target}::ISA"}, 'Resource::Silo::Container';
 
-    push @{"${caller}::ISA"}, 'Exporter';
-    push @{"${caller}::EXPORT"}, $shortcut;
     *{"${caller}::resource"} = $spec->_make_dsl;
     *{"${caller}::$shortcut"}     = $silo;
 };
@@ -107,8 +105,11 @@ Declaring the resources:
     package My::App;
 
     # This creates 'resource' and 'silo' functions
-    # and *also* makes 'silo' re-exportable via Exporter
     use Resource::Silo;
+
+    # reexport shortcut function
+    use Exporter qw(import);
+    our @EXPORT_OK = qw(silo);
 
     # A literal resource, that is, initialized with a constant value
     resource config_file =>
@@ -203,16 +204,6 @@ returning the one and true container instance.
 
 =back
 
-Additionally, L<Exporter> is added to the calling package's C<@ISA>
-and C<silo> is appended to C<our @EXPORT>.
-
-B<NOTE> If the module has other exported functions, they should be added
-via
-
-    push our @EXPORT, qw( foo bar quux );
-
-or else the C<silo> function in that array will be overwritten.
-
 =head2 USE OPTIONS
 
 =head3 -class
@@ -228,13 +219,19 @@ and will also be L<Moose>- and L<Moo>-compatible.
 If specified, use that name for main instance, instead of C<silo>.
 Name must be a valid identifier, i.e. C</[a-z_][a-z_0-9]*/i>.
 
+E.g.
+
+    use Resource::Silo -shortcut => 'instance';
+    # pretend we're MooX::Singleton
+
 =head2 resource
 
     resource 'name' => sub { ... };
     resource 'name' => %options;
 
 If the number of arguments is odd,
-the last one is popped and considered to be the initializer.
+the last one is popped and considered to be the initializer
+(C<init>, see below).
 
 %options may include:
 
@@ -482,19 +479,20 @@ Currently does nothing except emitting a warning.
 
 =head2 silo
 
-A re-exportable function returning one and true container instance
+A function returning one and true container instance
+(i.e. a singleton)
 associated with the class where the resources were declared.
 
-B<NOTE> Calling C<use Resource::Silo> from a different module will
-create a I<separate> container instance. You'll have to re-export
-(or otherwise provide access to) this function.
+C<silo-E<gt>new> will create a fresh instance of the I<same> container class,
+subject to the same initialization rules (e.g. for testing purposes).
 
-I<This is done on purpose so that multiple projects or modules can coexist
-within the same interpreter without interference.>
+B<NOTE> Prior to v.0.16, the shortcut function was also added to C<@EXPORT>
+in the calling package, re-exporting itself.
+This was a bad design decision and happens no more.
+If you still need this behavior, reimplementing it is as simple as
 
-C<silo-E<gt>new> will create a new instance of the I<same> container class.
-The resource container class may therefore be viewed as an
-I<optional singleton>.
+    use Exporter qw(import);
+    our @EXPORT = qw(silo);
 
 =head1 UTILITY FUNCTIONS
 
@@ -679,8 +677,13 @@ This software is still in beta stage. Its interface is still evolving.
 as it doesn't seem to have compelling use cases
 while complicating the implementation.
 
-=item * Forced re-exporting of C<silo> was probably a bad idea
-and should have been left as an exercise to the user.
+=item * Version 0.15 removes C<loose_deps> flag and instead allows listing
+any dependencies, provided they are all declared by the time of
+container instantiation.
+
+=item * Prior to version 0.16, C<silo> would add itself to C<@EXPORT>
+in the calling package.
+This was a bad design decision, and is now left as an exercise to the user.
 
 =back
 

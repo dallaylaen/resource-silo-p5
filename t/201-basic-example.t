@@ -46,6 +46,8 @@ BEGIN {
 
     package My::Res;
     use Resource::Silo -class;
+    use Exporter qw(import);
+    our @EXPORT = qw(silo);
 
     resource config      => sub { My::Config->load; };
     resource dbh         => sub {

@@ -17,10 +17,11 @@ BEGIN {
 use My::App;
 
 lives_and {
-    is one_ring->rule, 'them all';
+    is My::App::one_ring->rule, 'them all';
 } 'shortcut magic executed correctly';
 
 throws_ok {
+    package My::Err;
     Resource::Silo->import( -shortcut => "foo bar" );
 } qr/shortcut.*identifier/, "bad name = no go";
 
