@@ -339,7 +339,7 @@ If unspecified, any dependencies are allowed, but circular instantiation
 will still be prohibited.
 
 B<NOTE> This behavior was different prior to v.0.09
-and may be change again in the near future.
+and may change again in the near future.
 
 This parameter has a different structure
 if C<class> parameter is in action (see below).
@@ -422,7 +422,7 @@ This is mutually exclusive with C<fork_cleanup>.
 The higher the number, the later the resource will get destroyed.
 
 The default is 0, negative numbers are also valid, if that makes sense for
-you application
+your application
 (e.g. destroy C<$my_service_main_object> before the resources it consumes).
 
     resource logger =>
@@ -584,7 +584,7 @@ If a resource depends on other resources,
 those will be simply created upon request.
 
 It is possible to make several resources depend on each other.
-Trying to initialize such resource will cause an expection, however.
+Trying to initialize such resource will cause an exception, however.
 
 =head2 COMPATIBILITY
 
@@ -696,7 +696,7 @@ L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Resource-Silo>.
 
 =over
 
-=item * This module was names after a building in the game
+=item * This module was named after a building in the game
 B<I<Heroes of Might and Magic III.>>
 
 =item * This module was inspired in part by my work for
