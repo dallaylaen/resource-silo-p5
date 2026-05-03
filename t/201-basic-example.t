@@ -2,7 +2,7 @@
 
 =head1 DESCRIPTION
 
-Use Resource::Silo DLS with some fake classes,
+Use Resource::Silo DSL with some fake classes,
 make sure the most typical happy paths work.
 
 =cut
