@@ -733,7 +733,7 @@ L<https://metacpan.org/release/Resource-Silo>;
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2023-2024, Konstantin Uvarin, C<< <khedin@gmail.com> >>
+Copyright (c) 2023-2026, Konstantin Uvarin, C<< <khedin@gmail.com> >>
 
 This program is free software.
 You can redistribute it and/or modify it under the terms of either:

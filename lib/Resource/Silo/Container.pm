@@ -270,7 +270,7 @@ sub _silo_unexpected_dep {
     my $spec = $self->{-spec}{resource}{$name};
 
     my $explain = $spec->{autodeps}
-        ? ". Use explicit 'dependencies' or the 'loose_deps' flag"
+        ? ". Use explicit 'dependencies'"
         : " but is not listed in its dependencies";
     croak "Resource '$name' was unexpectedly required by"
         ." '$self->{-onbehalf}'$explain";
@@ -487,7 +487,7 @@ sub meta {
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2023, Konstantin Uvarin, C<< <khedin@gmail.com> >>
+Copyright (c) 2023-2026, Konstantin Uvarin, C<< <khedin@gmail.com> >>
 
 This program is free software.
 You can redistribute it and/or modify it under the terms of either:
