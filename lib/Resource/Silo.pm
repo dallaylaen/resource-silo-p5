@@ -381,10 +381,29 @@ E.g. when using L<Redis::Namespace>:
 Check the resource after initialization.
 The function must throw an exception if the resource is invalid.
 
-It is applied after the resource is initialized and before it is put into the cache,
+It is applied after the resource is initialized (and coerced, if C<coerce> is set)
+and before it is put into the cache,
 both for normally initialized and overridden resources.
 
 B<NOTE> Experimental, name and semantics may change in the future.
+
+=head3 coerce => sub { $container, $resource }: $resource
+
+Transform the resource value after initialization and before L</check>.
+The return value replaces the resource.
+An C<undef> or empty-string return is treated as an error.
+
+This is analogous to Moo's C<coerce> option on attributes
+(see L<Moo/coerce>), but operates at the container level
+and receives the container as its first argument.
+
+A typical use case is accepting a plain string from the initializer
+and converting it to a richer object:
+
+    resource config_dir =>
+        init    => sub { '/etc/myapp' },
+        coerce  => sub { my ($silo, $path) = @_; Path::Tiny::path($path) },
+        check   => sub { my ($silo, $dir)  = @_; die "not a dir" unless $dir->is_dir };
 
 =head3 cleanup => sub { $resource_instance }
 

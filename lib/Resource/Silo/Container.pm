@@ -159,6 +159,11 @@ sub _silo_instantiate_res {
         return $entity if ($spec->{nullable});
         croak "Instantiating resource '$key' $spec->{origin} returned undef for no apparent reason";
     }
+    if ($spec->{coerce}) {
+        $entity = $spec->{coerce}->($self, $entity);
+        croak "Coercing resource '$key' $spec->{origin} returned an empty value"
+            if !defined $entity || (ref $entity eq '' && $entity eq '');
+    }
     $spec->{check}->($self, $entity, $name, $arg)
         if $spec->{check};
     return $entity;

@@ -73,6 +73,7 @@ my %known_args = (
     argument        => 1,
     class           => 1,
     check           => 1,
+    coerce          => 1,
     dependencies    => 1,
     derived         => 1,
     cleanup         => 1,
@@ -172,6 +173,8 @@ sub add {
 
     croak "resource '$name': 'check' must be a function"
         if defined $spec{check} and (reftype $spec{check} // '') ne $CODE;
+    croak "resource '$name': 'coerce' must be a function"
+        if defined $spec{coerce} and (reftype $spec{coerce} // '') ne $CODE;
     croak "resource '$name': 'cleanup' must be a function"
         if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne $CODE;
     croak "resource '$name': 'fork_cleanup' must be a function"
