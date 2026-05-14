@@ -25,4 +25,10 @@ throws_ok {
     Resource::Silo->import( -shortcut => "foo bar" );
 } qr/shortcut.*identifier/, "bad name = no go";
 
+throws_ok {
+    package My::Err2;
+    Resource::Silo->import( -class );
+    silo();
+} qr/explicit.*shortcut/, "no more bare silo in class mode";
+
 done_testing;

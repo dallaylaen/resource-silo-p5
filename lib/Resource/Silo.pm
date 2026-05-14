@@ -28,7 +28,7 @@ sub import {
     my ($self, @param) = @_;
     my $caller = caller;
     my $target;
-    my $shortcut = "silo";
+    my $shortcut;
 
     while (@param) {
         my $flag = shift @param;
@@ -44,25 +44,36 @@ sub import {
         };
     };
 
-    $target //= __PACKAGE__."::container::".$caller;
+    if (!defined $target) {
+        # we're not in class mode, create a one-off package
+        $target = __PACKAGE__ . "::container::" . $caller;
+        $shortcut //= 'silo';
+    }
 
     my $spec = Resource::Silo::Metadata->new($target);
     $metadata{$target} = $spec;
 
     my $instance;
-    my $silo = set_prototype {
-        # cannot instantiate target until the package is fully defined,
-        # thus go lazy
-        $instance //= $target->new;
-    } '';
+    my $shortcut_sub = defined $shortcut
+        ? set_prototype {
+            # cannot instantiate target until the package is fully defined,
+            # thus go lazy
+            $instance //= $target->new;
+        } ''
+        : set_prototype {
+            # TODO 2027-01-01: remove the deprecation & just skip it entirely
+            croak "Resource::Silo: 'silo' is not exported anymore when -class is in action, use explicit -shortcut => ... instead"
+        } '';
+
+    $shortcut //= 'silo'; # only for deprecation
 
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
 
     push @{"${target}::ISA"}, 'Resource::Silo::Container';
 
-    *{"${caller}::resource"} = $spec->_make_dsl;
-    *{"${caller}::$shortcut"}     = $silo;
+    *{"${caller}::resource"}  = $spec->_make_dsl;
+    *{"${caller}::$shortcut"} = $shortcut_sub;
 };
 
 sub get_meta {

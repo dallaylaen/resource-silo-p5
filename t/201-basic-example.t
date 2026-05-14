@@ -45,7 +45,7 @@ BEGIN {
     };
 
     package My::Res;
-    use Resource::Silo -class;
+    use Resource::Silo -class, -shortcut => 'silo';
     use Exporter qw(import);
     our @EXPORT = qw(silo);
 
