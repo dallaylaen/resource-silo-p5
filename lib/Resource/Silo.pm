@@ -225,6 +225,11 @@ the calling package will itself become the container class.
 Such a class may have normal fields and methods in addition to resources
 and will also be L<Moose>- and L<Moo>-compatible.
 
+In this case, C<silo> will not be exported by default, unless C<-shortcut> is explicitly specified.
+
+Consider C<-class> for larger projects and especially libraries, as a library
+may benefit from component wiring and fork-awareness, but gains nothing by being a singleton.
+
 =head3 -shortcut <function name>
 
 If specified, use that name for main instance, instead of C<silo>.
@@ -515,6 +520,9 @@ associated with the class where the resources were declared.
 
 C<silo-E<gt>new> will create a fresh instance of the I<same> container class,
 subject to the same initialization rules (e.g. for testing purposes).
+
+B<NOTE> As of 0.17, C<silo> will not be available by default if C<-class> is used.
+Specify a C<-shortcut> explicitly to get it back.
 
 B<NOTE> Prior to v.0.16, the shortcut function was also added to C<@EXPORT>
 in the calling package, re-exporting itself.
