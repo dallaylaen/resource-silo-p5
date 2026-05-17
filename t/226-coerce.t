@@ -18,7 +18,7 @@ use Test::Exception;
     # coerce runs before check
     resource checked =>
         init    => sub { '  trimmed  ' },
-        coerce  => sub { my ($self, $val) = @_; $val =~ s/^\s+|\s+$//gr },
+        coerce  => sub { my ($self, $val) = @_; $val =~ s/^\s+|\s+$//g; $val },
         check   => sub {
             my ($self, $val) = @_;
             croak "checked: value must not contain spaces" if $val =~ /\s/;
