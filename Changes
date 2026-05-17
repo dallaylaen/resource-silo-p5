@@ -1,5 +1,8 @@
 # Revision history for Resource::Silo
 
+- 0.1702  Sun May 17 2026
+    - [test] Remove lib::relative dependency, replace with dirname(__FILE__)
+
 - 0.1701  Sun May 17 2026
     - [bug][test] Fix s/.../.../r for lower perl versions
 
