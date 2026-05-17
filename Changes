@@ -1,5 +1,8 @@
 # Revision history for Resource::Silo
 
+- 0.1701  Sun May 17 2026
+    - [bug][test] Fix s/.../.../r for lower perl versions
+
 - 0.17    Sun May 17 2026
     - [api] Make 'preload' accept an array of args is 'argument' is in action
     - [api][break] Don't export silo() by default when -class is in action, add deprecation error message
