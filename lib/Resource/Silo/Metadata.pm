@@ -154,6 +154,15 @@ sub add {
     croak "resource '$name': 'init' must be a function"
         unless ref $spec{init} and reftype $spec{init} eq $CODE;
 
+    if ($spec{preload}) {
+        if (defined $spec{argument}) {
+            croak "resource '$name': 'preload' must be an array of strings if 'argument' is specified"
+                unless ref $spec{preload} eq 'ARRAY' and !grep {ref $_} @{$spec{preload}};
+        } else {
+            $spec{preload} = [undef]; # a dummy argument so that preload itself has unified code
+        }
+    };
+
     if (!defined $spec{argument}) {
         $spec{orig_argument} = '';
         $spec{argument} = \&_is_empty;
@@ -184,10 +193,6 @@ sub add {
 
     $spec{fork_cleanup} //= $spec{cleanup};
 
-    if ($spec{preload}) {
-        push @{ $self->{preload} }, $name;
-    };
-
     $spec{origin} = Carp::shortmess("declared");
     $spec{origin} =~ s/\D+$//s;
 
@@ -217,6 +222,7 @@ sub add {
         $self->{pending_deps}->drop_sink_cascade($name);
     };
     $self->{resource}{$name} = \%spec;
+    push @{ $self->{preload} }, $name if $spec{preload};
 
     return $self;
 };

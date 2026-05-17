@@ -389,7 +389,6 @@ modules will be loaded, even if they are not required by preloaded resources.
 sub preload {
     my $self = shift;
     # TODO allow specifying resources to load
-    #      but first come up with a way to specify arguments, too.
 
     my $meta = $$self->{-spec};
 
@@ -397,7 +396,9 @@ sub preload {
 
     my $list = $meta->{preload};
     for my $name (@$list) {
-        my $unused = $$self->$name;
+        for my $arg (@{ $meta->{resource}{$name}{preload} }) {
+            my $unused = $$self->$name($arg);
+        }
     };
     return $self;
 };
