@@ -54,16 +54,20 @@ sub import {
     $metadata{$target} = $spec;
 
     my $instance;
-    my $shortcut_sub = defined $shortcut
-        ? set_prototype {
+    my $shortcut_sub = set_prototype {
             # cannot instantiate target until the package is fully defined,
             # thus go lazy
             $instance //= $target->new;
-        } ''
-        : set_prototype {
-            # TODO 2027-01-01: remove the deprecation & just skip it entirely
-            croak "Resource::Silo: 'silo' is not exported anymore when -class is in action, use explicit -shortcut => ... instead"
         } '';
+
+    if (!defined $shortcut) {
+        # TODO remove deprecation after 2027-01-01 and just let it die
+        my $orig = $shortcut_sub;
+        $shortcut_sub = sub {
+            carp "'silo' is deprecated when -class is in action, use explicit -shortcut instead";
+            goto &$orig;
+        }
+    }
 
     $shortcut //= 'silo'; # only for deprecation
 

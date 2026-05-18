@@ -27,6 +27,8 @@ throws_ok {
 
 throws_ok {
     package My::Err2;
+    # meh...
+    local $SIG{__WARN__} = sub { die $_[0] };
     Resource::Silo->import( -class );
     silo();
 } qr/explicit.*shortcut/, "no more bare silo in class mode";
