@@ -1,5 +1,9 @@
 # Revision history for Resource::Silo
 
+- 0.1703  Mon May 18 2026
+    - [api] Make 'silo' vs '-class' deprecation warning instead of exception
+    - [bug] Avoid modifying hash in END{} - led to sporadic exceptions in nested containers
+
 - 0.1702  Sun May 17 2026
     - [test] Remove lib::relative dependency, replace with dirname(__FILE__)
 
