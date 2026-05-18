@@ -74,9 +74,12 @@ sub DEMOLISH {
 # As container instances inside the silo() function will be available forever,
 # we MUST enforce freeing the resources before program ends
 END {
-    foreach my $container (values %active_instances) {
-        next unless $container;
-        $container->ctl->cleanup;
+    # don't iterate over a hash while simultaneously deleting from it.
+    # sorting is useless because keys are mem addresses.
+    my @list = keys %active_instances;
+    foreach my $id (@list) {
+        next unless $active_instances{$id};
+        $active_instances{$id}->ctl->cleanup;
     };
 };
 
