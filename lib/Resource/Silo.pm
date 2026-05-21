@@ -63,13 +63,16 @@ sub import {
     if (!defined $shortcut) {
         # TODO remove deprecation after 2027-01-01 and just let it die
         my $orig = $shortcut_sub;
+        my $seen = 0;
+        my $mess = Carp::shortmess("'silo' is deprecated when -class is in action, use explicit -shortcut instead");
         $shortcut_sub = sub {
-            carp "'silo' is deprecated when -class is in action, use explicit -shortcut instead";
+            warn $mess
+                unless $seen++;
             goto &$orig;
-        }
+        };
+        $shortcut = 'silo'; # only for deprecation
     }
 
-    $shortcut //= 'silo'; # only for deprecation
 
     no strict 'refs'; ## no critic
     no warnings 'redefine', 'once'; ## no critic
