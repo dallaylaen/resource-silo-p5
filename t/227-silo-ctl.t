@@ -30,7 +30,7 @@ subtest 'silo_ctl() returns the metadata object' => sub {
 subtest 'silo_ctl trace => sub { ... } sets $meta->trace' => sub {
     my $tracer = sub { "traced: $_[0]" };
     silo_ctl( trace => $tracer );
-    is $meta->trace, $tracer, 'trace is set on the metadata object';
+    is $meta->on_trace, $tracer, 'trace is set on the metadata object';
 };
 
 subtest 'silo_ctl errors' => sub {
@@ -40,7 +40,7 @@ subtest 'silo_ctl errors' => sub {
 
     throws_ok {
         silo_ctl( trace => 1 );
-    } qr/'trace' must be a function/, 'trace => non-coderef dies with descriptive error';
+    } qr/'on_trace' must be a function/, 'trace => non-coderef dies with descriptive error';
 };
 
 done_testing;

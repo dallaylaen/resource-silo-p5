@@ -65,8 +65,8 @@ has preload      => is => 'rw', default => sub { [] };
 has resource     => is => 'rw', default => sub { {} };
 has pending_deps => is => 'rw', default => sub { Resource::Silo::Metadata::DAG->new };
 
-has trace => is => 'rw', isa => sub {
-    croak "Resource::Silo: 'trace' must be a function"
+has on_trace => is => 'rw', isa => sub {
+    croak "Resource::Silo: 'on_trace' must be a function"
         unless (reftype $_[0] // '') eq 'CODE';
 };
 
@@ -320,7 +320,7 @@ sub configure {
 
     state %allow = (
         # alphabetical order
-        trace => 'trace',
+        trace => 'on_trace',
     );
 
     for (sort keys %options) {
@@ -452,6 +452,21 @@ sub elaborate_name {
     return "'$name' $res->{origin}";
 }
 
+=head2 trace
+
+Send a message on behalf of given resource and with appropriate context message.
+
+For internal use, mostly.
+
+=cut
+
+sub trace {
+    my ($self, $resource, $msg) = @_;
+    if (my $cb = $self->on_trace) {
+        $cb->($self->elaborate_name($resource) . " $msg " . Carp::shortmess(''));
+    };
+    return;
+}
 
 sub _is_sub {
     my ($name, $val) = @_;
