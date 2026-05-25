@@ -395,7 +395,7 @@ sub preload {
 
     my $meta = $$self->{-spec};
 
-    $meta->preload;
+    $meta->preload_modules;
 
     my $list = $meta->{preload};
     for my $name (@$list) {

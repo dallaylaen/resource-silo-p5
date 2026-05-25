@@ -1,5 +1,6 @@
 package Resource::Silo::Metadata;
 
+use 5.010;
 use strict;
 use warnings;
 our $VERSION = '0.1703';
@@ -15,10 +16,11 @@ container class. Normally only used internally.
 
 See also L<Resource::Silo/meta>.
 
-=head1 METHODS
+=head1 ATTRIBUTES
 
 =cut
 
+use Moo;
 use Carp;
 use Module::Load qw( load );
 use Scalar::Util qw( looks_like_number reftype );
@@ -38,28 +40,37 @@ my $CODE   = reftype sub { };
 my $REGEXP = ref qr/.../;
 sub _is_empty { $_[0] eq '' };
 
-=head2 new( $target )
+=head2 target
 
-$target is the name of the module where resource access methods will be created.
+Name of the container class for which this metadata is stored.
+
+=head2 resource
+
+A hash of resource specifications, keyed by resource name.
+
+=head2 preload
+
+List of resource names used for global app startup/health check.
+
+See C<preload> in L<Resource::Silo/resource> and LResource::Silo::Container/preload> for details.
+
+=head2 pending_deps
+
+A DAG of of pending resource interdependencies. See L<Resource::Silo::Metadata::DAG>.
 
 =cut
 
-sub new {
-    my ($class, $target) = @_;
-    return bless {
-        # package to work on
-        target       => $target,
+has target       => is => 'ro', required => 1;
+has preload      => is => 'rw', default => sub { [] };
+has resource     => is => 'rw', default => sub { {} };
+has pending_deps => is => 'rw', default => sub { Resource::Silo::Metadata::DAG->new };
 
-        # resources to load immediately upon startup
-        preload      => [],
-
-        # resource spec storage
-        resource     => {},
-
-        # tracking of forward dependencies:
-        pending_deps => Resource::Silo::Metadata::DAG->new,
-    }, $class;
+has trace => is => 'rw', isa => sub {
+    croak "Resource::Silo: 'trace' must be a function"
+        unless (reftype $_[0] // '') eq 'CODE';
 };
+
+=head1 METHODS
 
 =head2 add( $resource_name, ... )
 
@@ -67,27 +78,6 @@ Create resource type. See L<Resource::Silo/resource> for details.
 
 =cut
 
-# Alphabetical order, please
-# TODO add types to the hash to simplify checks
-my %known_args = (
-    argument        => 1,
-    class           => 1,
-    check           => 1,
-    coerce          => 1,
-    dependencies    => 1,
-    derived         => 1,
-    cleanup         => 1,
-    cleanup_order   => 1,
-    fork_cleanup    => 1,
-    fork_safe       => 1,
-    ignore_cache    => 1, # deprecated but has a special error message
-    init            => 1,
-    literal         => 1,
-    loose_deps      => 1, # deprecated, noop + warning
-    nullable        => 1,
-    preload         => 1,
-    require         => 1,
-);
 sub add {
     my $self = shift;
     my $name = shift;
@@ -96,6 +86,28 @@ sub add {
         unshift @_, init => $init;
     }
     my (%spec) = @_;
+
+    # Alphabetical order, please
+    # TODO add types to the hash to simplify checks
+    state $known_args = {
+        argument      => 1,
+        class         => 1,
+        check         => 1,
+        coerce        => 1,
+        dependencies  => 1,
+        derived       => 1,
+        cleanup       => 1,
+        cleanup_order => 1,
+        fork_cleanup  => 1,
+        fork_safe     => 1,
+        ignore_cache  => 1, # deprecated but has a special error message
+        init          => 1,
+        literal       => 1,
+        loose_deps    => 1, # deprecated, noop + warning
+        nullable      => 1,
+        preload       => 1,
+        require       => 1,
+    };
     my $target = $self->{target};
 
     croak "resource: name must be an identifier"
@@ -105,7 +117,7 @@ sub add {
     croak "resource: attempt to replace existing method '$name' in $target"
         if $target->can($name);
 
-    my @extra = grep { !$known_args{$_} } keys %spec;
+    my @extra = grep { !$known_args->{$_} } keys %spec;
     croak "resource '$name': unknown arguments in specification: @extra"
         if @extra;
 
@@ -297,6 +309,30 @@ sub _make_dsl {
     return sub { $inst->add(@_) };
 };
 
+=head2 configure
+
+
+
+=cut
+
+sub configure {
+    my ($self, %options) = @_;
+
+    state %allow = (
+        # alphabetical order
+        trace => 'trace',
+    );
+
+    for (sort keys %options) {
+        my $method = $allow{$_};
+        croak "Unknown option '$_' in configure()/silo_ctl()"
+            unless $method;
+        $self->$method($options{$_});
+    };
+
+    return $self;
+}
+
 =head2 list
 
 Returns a list (or arrayref in scalar context)
@@ -343,7 +379,7 @@ sub show {
     return \%show;
 };
 
-=head2 preload()
+=head2 preload_modules
 
 Check setup validity. Dies on errors, return C<$self> otherwise.
 
@@ -359,7 +395,7 @@ B<EXPERIMENTAL>. Interface & performed checks may change in the future.
 
 =cut
 
-sub preload {
+sub preload_modules {
     my $self = shift;
 
     my $res = $self->{resource};
@@ -414,6 +450,13 @@ sub elaborate_name {
     my $res = $self->{resource}{$name};
     return "'$name'" unless $res && $res->{origin};
     return "'$name' $res->{origin}";
+}
+
+
+sub _is_sub {
+    my ($name, $val) = @_;
+    croak "'$name' must be a function"
+        unless (reftype $val // '') eq 'CODE';
 }
 
 =head1 COPYRIGHT AND LICENSE
