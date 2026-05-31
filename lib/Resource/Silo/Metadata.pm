@@ -58,12 +58,18 @@ See C<preload> in L<Resource::Silo/resource> and LResource::Silo::Container/prel
 
 A DAG of of pending resource interdependencies. See L<Resource::Silo::Metadata::DAG>.
 
+=head2 sealed
+
+A boolean flag. When true, no further resources may be added to the container.
+Set by calling C<seal()>.
+
 =cut
 
 has target       => is => 'ro', required => 1;
 has preload      => is => 'rw', default => sub { [] };
 has resource     => is => 'rw', default => sub { {} };
 has pending_deps => is => 'rw', default => sub { Resource::Silo::Metadata::DAG->new };
+has sealed       => is => 'rw', default => 0;
 
 has on_trace => is => 'rw', isa => sub {
     croak "Resource::Silo: 'on_trace' must be a function"
@@ -81,6 +87,10 @@ Create resource type. See L<Resource::Silo/resource> for details.
 sub add {
     my $self = shift;
     my $name = shift;
+
+    croak "resource: cannot add resource to a sealed container"
+        if $self->{sealed};
+
     if (@_ % 2) {
         my $init = pop @_;
         unshift @_, init => $init;
@@ -330,6 +340,23 @@ sub configure {
         $self->$method($options{$_});
     };
 
+    return $self;
+}
+
+=head2 seal
+
+Verify that all declared resource dependencies are satisfied,
+then prevent any further resource declarations.
+
+Dies if there are unsatisfied dependencies.
+Does not initialize any resources.
+
+=cut
+
+sub seal {
+    my $self = shift;
+    $self->run_pending_checks;
+    $self->sealed(1);
     return $self;
 }
 
