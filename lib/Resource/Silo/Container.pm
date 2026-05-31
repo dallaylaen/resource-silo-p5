@@ -74,6 +74,7 @@ sub DEMOLISH {
 # As container instances inside the silo() function will be available forever,
 # we MUST enforce freeing the resources before program ends
 END {
+    local $Resource::Silo::IN_END; $Resource::Silo::IN_END = 1;
     # don't iterate over a hash while simultaneously deleting from it.
     # sorting is useless because keys are mem addresses.
     my @list = keys %active_instances;
@@ -121,7 +122,8 @@ sub _silo_instantiate_res {
     croak "Illegal resource name '$name'"
         unless $name =~ $ID_REX;
 
-    my $spec = $self->{-spec}{resource}{$name};
+    my $meta = $self->{-spec};
+    my $spec = $meta->{resource}{$name};
     $arg //= '';
 
     croak "Attempting to fetch nonexistent resource '$name'"
@@ -151,6 +153,9 @@ sub _silo_instantiate_res {
             or croak "resource '$name': failed to load '$mod': $@";
     };
 
+    my $message = 'initializing' . (
+        $self->{-onbehalf} ? " on behalf of " . $meta->elaborate_name($self->{-onbehalf}) : '');
+
     # Finally set the temporary flags
     local $self->{-onbehalf} = $name; # should we use a stack instead?
     local $self->{-pending}{$key} = 1;
@@ -169,6 +174,9 @@ sub _silo_instantiate_res {
     }
     $spec->{check}->($self, $entity, $name, $arg)
         if $spec->{check};
+
+    $meta->trace($name, $message);
+
     return $entity;
 };
 
@@ -177,11 +185,13 @@ sub _silo_cleanup_res {
     my ($self, $name, %opt) = @_;
 
     # TODO Do we need to validate arguments here?
-    my $spec = $self->{-spec}{resource}{$name};
+    my $meta = $self->{-spec};
+    my $spec = $meta->{resource}{$name};
 
     return if $opt{fork} and not $opt{force} and $spec->{fork_safe};
 
     # NOTE Be careful! cleanup must never ever die!
+    $meta->trace($name, 'deinitializing');
 
     my $action;
     if (!$self->{-override}{$name}) {

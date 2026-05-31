@@ -24,6 +24,7 @@ sub silo_ctl (@); ## no critic 'prototypes'
 # We'll need a global metadata storage
 #     to allow extending container classes
 our %metadata;
+our $IN_END;
 
 sub import {
     my ($self, @param) = @_;

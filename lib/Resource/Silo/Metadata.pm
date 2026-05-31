@@ -463,7 +463,8 @@ For internal use, mostly.
 sub trace {
     my ($self, $resource, $msg) = @_;
     if (my $cb = $self->on_trace) {
-        $cb->($self->elaborate_name($resource) . " $msg " . Carp::shortmess(''));
+        $cb->($self->elaborate_name($resource) . " $msg"
+            . ($Resource::Silo::IN_END && $Resource::Silo::IN_END ? " at END\n" : Carp::shortmess('')));
     };
     return;
 }
