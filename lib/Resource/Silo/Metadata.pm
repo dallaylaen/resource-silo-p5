@@ -488,9 +488,9 @@ For internal use, mostly.
 =cut
 
 sub trace {
-    my ($self, $resource, $msg) = @_;
+    my ($self, $container, $resource, $msg) = @_;
     if (my $cb = $self->on_trace) {
-        $cb->($self->elaborate_name($resource) . " $msg"
+        $cb->($container, $self->elaborate_name($resource) . " $msg"
             . ($Resource::Silo::IN_END && $Resource::Silo::IN_END ? " at END\n" : Carp::shortmess('')));
     };
     return;

@@ -175,7 +175,7 @@ sub _silo_instantiate_res {
     $spec->{check}->($self, $entity, $name, $arg)
         if $spec->{check};
 
-    $meta->trace($name, $message);
+    $meta->trace($self, $name, $message);
 
     return $entity;
 };
@@ -191,7 +191,7 @@ sub _silo_cleanup_res {
     return if $opt{fork} and not $opt{force} and $spec->{fork_safe};
 
     # NOTE Be careful! cleanup must never ever die!
-    $meta->trace($name, 'deinitializing');
+    $meta->trace($self, $name, 'deinitializing');
 
     my $action;
     if (!$self->{-override}{$name}) {

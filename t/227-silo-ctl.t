@@ -28,7 +28,7 @@ subtest 'silo_ctl() returns the metadata object' => sub {
 };
 
 subtest 'silo_ctl trace => sub { ... } sets $meta->trace' => sub {
-    my $tracer = sub { "traced: $_[0]" };
+    my $tracer = sub { "traced: $_[1]" };
     silo_ctl( trace => $tracer );
     is $meta->on_trace, $tracer, 'trace is set on the metadata object';
 };
