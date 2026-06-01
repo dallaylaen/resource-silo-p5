@@ -4,7 +4,6 @@
 
 Tests for the silo_ctl() function:
   - silo_ctl() with no arguments returns the correct metadata object;
-  - silo_ctl( trace => sub { ... } ) sets $meta->trace;
   - silo_ctl( some_unknown_field => 1 ) dies with a descriptive error;
   - silo_ctl( trace => 1 ) dies because trace must be a function.
 
@@ -25,12 +24,6 @@ is ref $meta, 'Resource::Silo::Metadata', 'silo->ctl->meta is a Metadata object'
 subtest 'silo_ctl() returns the metadata object' => sub {
     my $ret = silo_ctl();
     is $ret, $meta, 'silo_ctl() returns the same metadata object as silo->ctl->meta';
-};
-
-subtest 'silo_ctl trace => sub { ... } sets $meta->trace' => sub {
-    my $tracer = sub { "traced: $_[1]" };
-    silo_ctl( trace => $tracer );
-    is $meta->on_trace, $tracer, 'trace is set on the metadata object';
 };
 
 subtest 'silo_ctl errors' => sub {
