@@ -499,18 +499,18 @@ either initialized, or overridden.
 
 See L<Resource::Silo::Container/lock>.
 
-=head3 preload => 0 | 1 | [ argument1, argument2, ... ]
+=head3 preflight => 0 | 1 | [ argument1, argument2, ... ]
 
-If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preload> is called.
+If set, try loading the resource when C<silo-E<gt>ctl-E<gt>preflight> is called.
 Useful if you want to throw errors when a service is starting, as in "fail early".
 
 Note that this flag does not affect the container initialization itself,
 it has to be requested explicitly.
 
-If C<argument> is in action, C<preload>, if present, B<must> be a list of arguments,
+If C<argument> is in action, C<preflight>, if present, B<must> be a list of arguments,
 and the initializer will be called with each of them, in the specified order.
 
-See L<Resource::Silo::Container/preload>.
+See L<Resource::Silo::Container/preflight>.
 
 =head3 nullable => 0 | 1
 

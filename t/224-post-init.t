@@ -37,7 +37,7 @@ subtest 'bad override' => sub {
     my $app = My::App224->new(foo => "foo bared");
 
     # delayed check is bad but we cannot guarantee it anyway.
-    # use 'preload' to check all the resources
+    # use 'preflight' to check all the resources
     throws_ok {
         $app->foo;
     } qr/.*number/;

@@ -26,7 +26,7 @@ subtest 'no problem' => sub {
     } "defining a valid setup works";
 
     lives_ok {
-        All::Good->new->ctl->preload;
+        All::Good->new->ctl->preflight;
     } "setup was actually good";
 };
 
@@ -57,11 +57,11 @@ subtest 'unloadable modules' => sub {
         resource foo    =>
             require         => ['My::Module'],
             init            => sub {},
-            preload         => 1;
+            preflight         => 1;
     } "defining invalid setup is ok";
 
     throws_ok {
-        Bad::Mods->new->ctl->preload;
+        Bad::Mods->new->ctl->preflight;
     } qr(resource 'foo': .*load.* 'My::Module'), "can't load modules = no go";
 
     throws_ok {

@@ -387,9 +387,9 @@ sub unlock {
     return $self;
 };
 
-=head2 preload()
+=head2 preflight()
 
-Try loading all the resources that have C<preload> flag set.
+Try loading all the resources that have C<preflight> flag set.
 
 May be useful if e.g. a server-side application is starting and must
 check its database connection(s) before it starts handling any clients.
@@ -399,7 +399,7 @@ modules will be loaded, even if they are not required by preloaded resources.
 
 =cut
 
-sub preload {
+sub preflight {
     my $self = shift;
     # TODO allow specifying resources to load
 
@@ -407,9 +407,9 @@ sub preload {
 
     $meta->preload_modules;
 
-    my $list = $meta->{preload};
+    my $list = $meta->{preflight};
     for my $name (@$list) {
-        for my $arg (@{ $meta->{resource}{$name}{preload} }) {
+        for my $arg (@{ $meta->{resource}{$name}{preflight} }) {
             my $unused = $$self->$name($arg);
         }
     };

@@ -48,11 +48,11 @@ Name of the container class for which this metadata is stored.
 
 A hash of resource specifications, keyed by resource name.
 
-=head2 preload
+=head2 preflight
 
 List of resource names used for global app startup/health check.
 
-See C<preload> in L<Resource::Silo/resource> and LResource::Silo::Container/preload> for details.
+See C<preflight> in L<Resource::Silo/resource> and LResource::Silo::Container/preflight> for details.
 
 =head2 pending_deps
 
@@ -66,7 +66,7 @@ Set by calling C<seal()>.
 =cut
 
 has target       => is => 'ro', required => 1;
-has preload      => is => 'rw', default => sub { [] };
+has preflight      => is => 'rw', default => sub { [] };
 has resource     => is => 'rw', default => sub { {} };
 has pending_deps => is => 'rw', default => sub { Resource::Silo::Metadata::DAG->new };
 has sealed       => is => 'rw', default => 0;
@@ -115,7 +115,7 @@ sub add {
         literal       => 1,
         loose_deps    => 1, # deprecated, noop + warning
         nullable      => 1,
-        preload       => 1,
+        preflight       => 1,
         require       => 1,
     };
     my $target = $self->{target};
@@ -176,12 +176,12 @@ sub add {
     croak "resource '$name': 'init' must be a function"
         unless ref $spec{init} and reftype $spec{init} eq $CODE;
 
-    if ($spec{preload}) {
+    if ($spec{preflight}) {
         if (defined $spec{argument}) {
-            croak "resource '$name': 'preload' must be an array of strings if 'argument' is specified"
-                unless ref $spec{preload} eq 'ARRAY' and !grep {ref $_} @{$spec{preload}};
+            croak "resource '$name': 'preflight' must be an array of strings if 'argument' is specified"
+                unless ref $spec{preflight} eq 'ARRAY' and !grep {ref $_} @{$spec{preflight}};
         } else {
-            $spec{preload} = [undef]; # a dummy argument so that preload itself has unified code
+            $spec{preflight} = [undef]; # a dummy argument so that preflight itself has unified code
         }
     };
 
@@ -244,7 +244,7 @@ sub add {
         $self->{pending_deps}->drop_sink_cascade($name);
     };
     $self->{resource}{$name} = \%spec;
-    push @{ $self->{preload} }, $name if $spec{preload};
+    push @{ $self->{preflight} }, $name if $spec{preflight};
 
     return $self;
 };

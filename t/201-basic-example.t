@@ -73,7 +73,7 @@ subtest 'imports & instantiation' => sub {
 
 subtest 'load by dependencies' => sub {
     lives_ok {
-        silo->ctl->meta->preload;
+        silo->ctl->meta->preflight;
     } "self-check lives";
     my $dbh = silo->dbh;
     is ref $dbh, 'My::Database', 'can connect to "database"';
