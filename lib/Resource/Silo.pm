@@ -512,6 +512,23 @@ and the initializer will be called with each of them, in the specified order.
 
 See L<Resource::Silo::Container/preflight>.
 
+=head3 on_preflight => sub { ... }
+
+Perform additional checks on C<$app-E<gt>ctl-E<gt>preflight>
+which are not required for normal startup.
+
+Implies C<preflight> => 1 unless specified explicitly.
+This will cause an exception if the resource has an argument
+but explicit preflight argument list is not specified.
+
+Arguments to the callback are C<($resource, $container, $name, $arg)>.
+
+Return value is ignored.
+
+The callback must throw on errors.
+
+B<NOTE> The callback order is not guaranteed (yet).
+
 =head3 nullable => 0 | 1
 
 Setting this flag allows returning C<undef> from the initializer

@@ -408,10 +408,13 @@ sub preflight {
 
     $meta->preload_modules;
 
-    my $list = $meta->{preflight};
-    for my $name (@$list) {
-        for my $arg (@{ $meta->{resource}{$name}{preflight} }) {
-            my $unused = $$self->$name($arg);
+    for my $name (@{ $meta->{preflight} // [] }) {
+        my $spec = $meta->{resource}{$name};
+        for my $arg (@{ $spec->{preflight} }) {
+            my $inst = $$self->$name($arg);
+            if ($spec->{on_preflight}) {
+                $spec->{on_preflight}->($inst, $$self, $name, $arg);
+            }
         }
     };
     return $self;

@@ -52,7 +52,7 @@ A hash of resource specifications, keyed by resource name.
 
 List of resource names used for global app startup/health check.
 
-See C<preflight> in L<Resource::Silo/resource> and LResource::Silo::Container/preflight> for details.
+See C<preflight> in L<Resource::Silo/resource> and L<Resource::Silo::Container/preflight> for details.
 
 =head2 pending_deps
 
@@ -66,7 +66,7 @@ Set by calling C<seal()>.
 =cut
 
 has target       => is => 'ro', required => 1;
-has preflight      => is => 'rw', default => sub { [] };
+has preflight    => is => 'rw', default => sub { [] };
 has resource     => is => 'rw', default => sub { {} };
 has pending_deps => is => 'rw', default => sub { Resource::Silo::Metadata::DAG->new };
 has sealed       => is => 'rw', default => 0;
@@ -115,6 +115,7 @@ sub add {
         literal       => 1,
         loose_deps    => 1, # deprecated, noop + warning
         nullable      => 1,
+        on_preflight  => 1,
         preflight     => 1,
         preload       => 1, # deprecated, ->preflight + warning
         require       => 1,
@@ -182,6 +183,9 @@ sub add {
         $spec{preflight} //= delete $spec{preload};
     };
 
+    $spec{preflight} //= 1
+        if defined $spec{on_preflight};
+
     if ($spec{preflight}) {
         if (defined $spec{argument}) {
             croak "resource '$name': 'preflight' must be an array of strings if 'argument' is specified"
@@ -216,6 +220,9 @@ sub add {
         if defined $spec{cleanup} and (reftype $spec{cleanup} // '') ne $CODE;
     croak "resource '$name': 'fork_cleanup' must be a function"
         if defined $spec{fork_cleanup} and (reftype $spec{fork_cleanup} // '') ne $CODE;
+    croak "resource '$name': 'on_preflight' must be a function"
+        if defined $spec{on_preflight} and (reftype $spec{on_preflight} // '') ne $CODE;
+
     croak "resource '$name': 'fork_cleanup' and 'fork_safe' are mutually exclusive"
         if $spec{fork_cleanup} and $spec{fork_safe};
 
