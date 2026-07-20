@@ -15,11 +15,11 @@ use Resource::Silo::Container;
 # This is a dummy block to hint IDEs.
 # see 'import' below for _real_ resource & silo implementation
 use parent 'Exporter';
-our @EXPORT = qw( resource silo silo_ctl );
+our @EXPORT = qw( resource silo resource_ctl );
 #@returns Resource::Silo::Container
 sub silo     ();  ## no critic 'prototypes'
 sub resource (@); ## no critic 'prototypes'
-sub silo_ctl (@); ## no critic 'prototypes'
+sub resource_ctl (@); ## no critic 'prototypes'
 
 # We'll need a global metadata storage
 #     to allow extending container classes
@@ -75,7 +75,7 @@ sub import {
         $shortcut = 'silo'; # only for deprecation
     }
 
-    my $silo_ctl = set_prototype {
+    my $resource_ctl = set_prototype {
         $spec->configure(@_);
     } '@';
 
@@ -85,7 +85,7 @@ sub import {
     push @{"${target}::ISA"}, 'Resource::Silo::Container';
 
     *{"${caller}::resource"}  = $spec->_make_dsl;
-    *{"${caller}::silo_ctl"}  = $silo_ctl;
+    *{"${caller}::resource_ctl"}  = $resource_ctl;
     *{"${caller}::$shortcut"} = $shortcut_sub;
 };
 

@@ -335,7 +335,7 @@ sub configure {
 
     for (sort keys %options) {
         my $method = $allow{$_};
-        croak "Unknown option '$_' in configure()/silo_ctl()"
+        croak "Unknown option '$_' in configure()/resource_ctl()"
             unless $method;
         $self->$method($options{$_});
     };

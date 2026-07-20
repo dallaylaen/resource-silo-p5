@@ -22,7 +22,7 @@ use Test::Exception;
         dependencies => [qw( config )],
         init         => sub { $_[0]->config->{x} };
 
-    ::lives_ok { silo_ctl->seal } 'seal succeeds on consistent metadata';
+    ::lives_ok { resource_ctl->seal } 'seal succeeds on consistent metadata';
 
     # Resources still work after sealing
     ::is silo->derived, 1, 'resources accessible after seal';
@@ -43,7 +43,7 @@ use Test::Exception;
     # 'missing' is never declared
 
     ::throws_ok {
-        silo_ctl->seal;
+        resource_ctl->seal;
     } qr/Unsatisfied/, 'seal dies when forward deps are unresolved';
 }
 
@@ -54,7 +54,7 @@ use Test::Exception;
     our $inited = 0;
     resource expensive => sub { $inited++; 'value' };
 
-    silo_ctl->seal;
+    resource_ctl->seal;
 }
 is $My::Silo::Lazy::inited, 0, 'seal does not initialize any resources';
 

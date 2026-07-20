@@ -3,7 +3,7 @@
 =head1 DESCRIPTION
 
 Tests for the on_trace callback:
-  - silo_ctl( trace => sub { ... } ) sets the trace callback;
+  - resource_ctl( trace => sub { ... } ) sets the trace callback;
   - the callback receives ($container, $message) on resource init;
   - the callback receives ($container, $message) on resource cleanup.
 
@@ -18,7 +18,7 @@ use Resource::Silo;
 resource foo => sub { 42 };
 
 my @log;
-silo_ctl( trace => sub {
+resource_ctl( trace => sub {
     my ($container, $msg) = @_;
     push @log, { container => $container, msg => $msg };
 });
