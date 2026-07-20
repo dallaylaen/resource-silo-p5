@@ -1,5 +1,6 @@
 package Resource::Silo::Container;
 
+use 5.010;
 use strict;
 use warnings;
 our $VERSION = '0.1703';
@@ -503,6 +504,22 @@ Get resource metadata object (a L<Resource::Silo::Metadata>).
 sub meta {
     return ${+shift}->{-spec};
 };
+
+## Deprecations and warnings
+
+=head2 preload
+
+Deprecated, use L</preflight> instead.
+
+=cut
+
+sub preload {
+    state $warned;
+    carp "ctl->preload is deprecated, use ctl->preflight instead"
+        unless $warned++;
+    goto &preflight;
+}
+
 
 =head1 COPYRIGHT AND LICENSE
 

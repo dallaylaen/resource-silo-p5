@@ -115,7 +115,8 @@ sub add {
         literal       => 1,
         loose_deps    => 1, # deprecated, noop + warning
         nullable      => 1,
-        preflight       => 1,
+        preflight     => 1,
+        preload       => 1, # deprecated, ->preflight + warning
         require       => 1,
     };
     my $target = $self->{target};
@@ -131,10 +132,10 @@ sub add {
     croak "resource '$name': unknown arguments in specification: @extra"
         if @extra;
 
-    croak "'ignore_cache' is deprecated. Use a simple method instead"
+    croak "resouce '$name': 'ignore_cache' is deprecated. Use a simple method instead"
         if exists $spec{ignore_cache};
 
-    carp "'loose_deps' is deprecated and has no effect"
+    carp "resouce '$name': 'loose_deps' is deprecated and has no effect"
         if delete $spec{loose_deps};
 
     {
@@ -175,6 +176,11 @@ sub add {
 
     croak "resource '$name': 'init' must be a function"
         unless ref $spec{init} and reftype $spec{init} eq $CODE;
+
+    if (defined $spec{preload}) {
+        carp "resource '$name': 'preload' is deprecated, use 'preflight' instead";
+        $spec{preflight} //= delete $spec{preload};
+    };
 
     if ($spec{preflight}) {
         if (defined $spec{argument}) {
