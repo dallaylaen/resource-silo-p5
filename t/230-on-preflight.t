@@ -122,7 +122,7 @@ subtest 'callback receives correct arguments' => sub {
     is $got->[0]{inst},  'check_inst', 'first arg is the resource instance';
     isa_ok $got->[0]{container}, 'T::Args', 'second arg is the container';
     is $got->[0]{name},  'check',      'third arg is the resource name';
-    is $got->[0]{arg},   undef,        'fourth arg is undef for no-argument resource';
+    is $got->[0]{arg},   '',        'fourth arg is empty for no-argument resource';
 };
 
 subtest 'callback receives arg for parametric resource' => sub {

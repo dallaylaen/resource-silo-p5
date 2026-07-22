@@ -176,6 +176,9 @@ sub _silo_instantiate_res {
     $spec->{check}->($self, $entity, $name, $arg)
         if $spec->{check};
 
+    $spec->{on_preflight}->($entity, $self, $name, $arg)
+        if ($self->{-in_preflight} and $spec->{on_preflight});
+
     $meta->trace($self, $name, $message);
 
     return $entity;
@@ -407,14 +410,12 @@ sub preflight {
     my $meta = $$self->{-spec};
 
     $meta->preload_modules;
+    local $$self->{-in_preflight} = 1;
 
     for my $name (@{ $meta->{preflight} // [] }) {
         my $spec = $meta->{resource}{$name};
         for my $arg (@{ $spec->{preflight} }) {
-            my $inst = $$self->$name($arg);
-            if ($spec->{on_preflight}) {
-                $spec->{on_preflight}->($inst, $$self, $name, $arg);
-            }
+            my $unused = $$self->$name($arg);
         }
     };
     return $self;
